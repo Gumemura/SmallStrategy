@@ -114,15 +114,25 @@ public class GameController : MonoBehaviour
 	//Returns all neighbors
 	private List<Vector3Int> getNeighbors(Vector3Int home){
 		List<Vector3Int> neighbors = new List<Vector3Int>();
-		neighbors.Add(home + Vector3Int.up);
-		neighbors.Add(home + Vector3Int.down);
-		neighbors.Add(home + Vector3Int.left);
-		neighbors.Add(home + Vector3Int.right);
 
-		neighbors.Add(home + Vector3Int.up + Vector3Int.left);
-		neighbors.Add(home + Vector3Int.up + Vector3Int.right);
-		neighbors.Add(home + Vector3Int.down + Vector3Int.left);
-		neighbors.Add(home + Vector3Int.down + Vector3Int.right);
+		if(floorTilemap.GetTile(home + Vector3Int.up) != null){neighbors.Add(home + Vector3Int.up);}
+		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
+		if(floorTilemap.GetTile(home + Vector3Int.left) != null){neighbors.Add(home + Vector3Int.left);}
+		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
+
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null && floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.left);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null && floorTilemap.GetTile(home + Vector3Int.right) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.right);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null && floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.down + Vector3Int.left);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null && floorTilemap.GetTile(home + Vector3Int.right) != null)){
+			neighbors.Add(home + Vector3Int.down + Vector3Int.right);
+		}
+
 		return neighbors;
 	}
 
