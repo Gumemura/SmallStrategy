@@ -77,6 +77,13 @@ public class GameController : MonoBehaviour
 			}else{
 				somethingIsSelected = false;
 			}
+
+			if(somethingIsSelected){
+				foreach(Vector3Int walkArea in walkableArea(hitBox.transform)){
+					Vector3 convetedWalkArea = convertGidPosToWorldPos(walkArea);
+					Instantiate(debugBall, convetedWalkArea, Quaternion.identity, debugParent);
+				}
+			}
 		}
 
 		if(somethingIsSelected){
@@ -102,7 +109,7 @@ public class GameController : MonoBehaviour
 							}
 						}
 					}
-				}	
+				}
 			}	
 		}
 	}
@@ -192,6 +199,33 @@ public class GameController : MonoBehaviour
 			// }
 		}
 		unitIsMoving = false;
+	}
+
+	//Calculaing walkable area
+	public List<Vector3Int> walkableArea(Transform unit){
+		List<Vector3Int> walkable = new List<Vector3Int>();
+		int speed = unit.GetComponent<ChampsBehaviour>().speed;
+		int rows = (2 * speed) + 1;
+		int cells = speed + 1;
+
+		Vector3Int unitPos = unit.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+		Vector3Int startingPoint = new Vector3Int(unitPos.x - speed, unitPos.y + speed, unitPos.z);
+
+		for(int i = 0; i < rows; i++){
+			for(int c = 0; c < rows; c++){
+				if(i <= speed){
+					if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2)){
+						walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
+					}
+				}else{
+					if(i + c > (speed + 1) + 2 * (i - speed - 1) && i + c <= speed * 3){
+						walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
+					}
+				}
+			}
+		}
+
+		return walkable;
 	}
 }
 
