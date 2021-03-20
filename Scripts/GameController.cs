@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using TMPro; 
+using System;
+
 
 public class GameController : MonoBehaviour
 {
 	[Header("Debug")]
 	public Transform debugBall;
+	public Transform debugParent;
 	[SerializeField] TextMeshProUGUI boundsCoordsDisplay;
 	[SerializeField] TextMeshProUGUI vector3CoordsDisplay;
-
 
 	[Header("Cursor sprites")]
 	public Sprite normalCursor;
@@ -20,6 +22,9 @@ public class GameController : MonoBehaviour
 	[Header("Tile and Grid")]
 	public Grid gameGrid;
 	public Tilemap floorTilemap;
+
+	[Header("Champs")]
+	public float movementVelocity;
 
 	private string champsTag = "Champ";
 	private SpriteRenderer spriteRenderer;
@@ -86,20 +91,88 @@ public class GameController : MonoBehaviour
 		}
 
 		if(somethingIsSelected){
-
 			if(floorTilemap.GetTile(gridPos) == null){
-				spriteRenderer. sprite = xCursor;
+				spriteRenderer.sprite = xCursor;
 			}else{
 				if(Input.GetMouseButtonDown(1)){
-					List<Vector3Int> path = new List<Vector3Int>();
-					path = hitBox.transform.GetComponent<ChampsBehaviour>().pathFinder(gameGrid, floorTilemap, gridPos);
+					if(hitBox.transform.tag == champsTag){
+						List<Vector3Int> path = new List<Vector3Int>();
+						Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+						path = pathFinder(floorTilemap, startPos, gridPos);
 
-					foreach(Vector3Int cell in path){
-						Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
-						Instantiate(debugBall, convetedPath, Quaternion.identity);
+						foreach (Transform child in debugParent) {
+							GameObject.Destroy(child.gameObject);
+						}
+						foreach(Vector3Int cell in path){
+							Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
+							Instantiate(debugBall, convetedPath, Quaternion.identity, debugParent);
+						}
 					}
 				}
 			}		
 		}
 	}
+
+	//Returns all neighbors
+	private List<Vector3Int> getNeighbors(Vector3Int home){
+		List<Vector3Int> neighbors = new List<Vector3Int>();
+		neighbors.Add(home + Vector3Int.up);
+		neighbors.Add(home + Vector3Int.down);
+		neighbors.Add(home + Vector3Int.left);
+		neighbors.Add(home + Vector3Int.right);
+
+		neighbors.Add(home + Vector3Int.up + Vector3Int.left);
+		neighbors.Add(home + Vector3Int.up + Vector3Int.right);
+		neighbors.Add(home + Vector3Int.down + Vector3Int.left);
+		neighbors.Add(home + Vector3Int.down + Vector3Int.right);
+		return neighbors;
+	}
+
+
+	//Pathfinder using Breadth First Search
+	public List<Vector3Int> pathFinder(Tilemap tilemap, Vector3Int start, Vector3Int end){
+		Queue<Vector3Int> frontier = new Queue<Vector3Int>();
+		frontier.Enqueue(start);
+
+		Dictionary<Vector3Int, Vector3Int> came_from = new Dictionary<Vector3Int, Vector3Int>();
+		came_from.Add(start, default(Vector3Int));
+
+		Vector3Int current;
+		List<Vector3Int> neighbors; 
+
+		while(frontier.Count != 0){
+			current = frontier.Dequeue();
+			neighbors = getNeighbors(current);
+
+			if(current == end){
+				break;
+			}
+
+			foreach(Vector3Int neighbor in neighbors){
+				if(tilemap.GetTile(neighbor) != null){
+					if(!came_from.ContainsKey(neighbor)){
+						frontier.Enqueue(neighbor);
+						came_from.Add(neighbor, current);
+					}
+				}
+			}
+		}
+
+		current = end;
+		List<Vector3Int> path = new List<Vector3Int>();
+
+		while(current != start){
+			path.Add(current);
+			current = came_from[current];
+		}
+
+		path.Reverse();
+
+		return path;
+	}
+
+	public void moveChamp(Transform champ, Vector3Int path){
+
+	}
 }
+
