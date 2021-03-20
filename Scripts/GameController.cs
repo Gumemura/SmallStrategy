@@ -22,9 +22,11 @@ public class GameController : MonoBehaviour
 	[Header("Tile and Grid")]
 	public Grid gameGrid;
 	public Tilemap floorTilemap;
+	public float unitTileOffset;
 
 	[Header("Champs")]
 	public float movementVelocity;
+	[HideInInspector]public bool unitIsMoving;
 
 	private string champsTag = "Champ";
 	private SpriteRenderer spriteRenderer;
@@ -32,22 +34,8 @@ public class GameController : MonoBehaviour
 	private bool somethingIsSelected;
 	private RaycastHit2D hitBox;
 
-	[HideInInspector]
-	public int[,] tileArray;
-
 	void Start(){
 		floorTilemap.CompressBounds();
-
-		Vector3 center = gameGrid.CellToWorld(floorTilemap.origin);
-
-		tileArray = new int[floorTilemap.size.x, floorTilemap.size.y];
-
-		// foreach(var cells in floorTilemap.cellBounds.allPositionsWithin){
-		// 	center = gameGrid.CellToWorld(new Vector3Int(cells.x, cells.y, cells.z)) + new Vector3(0, gameGrid.cellSize.y/2, 0);
-		// 	print(cells.x + " " + cells.y + " | " + center);
-		// 	Instantiate(debugBall, center, Quaternion.identity);
-		// }
-
 
 		//Turning the default windows cursor off
 		Cursor.visible = false;
@@ -57,6 +45,7 @@ public class GameController : MonoBehaviour
 		allHeroes = GameObject.FindGameObjectsWithTag(champsTag);
 
 		somethingIsSelected = false;
+		unitIsMoving = false;
 	}
 
 	// Update is called once per frame
@@ -96,21 +85,30 @@ public class GameController : MonoBehaviour
 			}else{
 				if(Input.GetMouseButtonDown(1)){
 					if(hitBox.transform.tag == champsTag){
-						List<Vector3Int> path = new List<Vector3Int>();
-						Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-						path = pathFinder(floorTilemap, startPos, gridPos);
+						//Movement
+						if(unitIsMoving == false){
+							List<Vector3Int> path = new List<Vector3Int>();
+							Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+							path = pathFinder(floorTilemap, startPos, gridPos);
 
-						foreach (Transform child in debugParent) {
-							GameObject.Destroy(child.gameObject);
-						}
-						foreach(Vector3Int cell in path){
-							Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
-							Instantiate(debugBall, convetedPath, Quaternion.identity, debugParent);
+							foreach (Transform child in debugParent) {
+								GameObject.Destroy(child.gameObject);
+							}
+							StartCoroutine(moveUnit(hitBox.transform, path));
+
+							foreach(Vector3Int cell in path){
+								Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
+								Instantiate(debugBall, convetedPath, Quaternion.identity, debugParent);
+							}
 						}
 					}
-				}
-			}		
+				}	
+			}	
 		}
+	}
+
+	public Vector3 convertGidPosToWorldPos(Vector3Int gridPos){
+		return gameGrid.CellToWorld(gridPos) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
 	//Returns all neighbors
@@ -127,7 +125,6 @@ public class GameController : MonoBehaviour
 		neighbors.Add(home + Vector3Int.down + Vector3Int.right);
 		return neighbors;
 	}
-
 
 	//Pathfinder using Breadth First Search
 	public List<Vector3Int> pathFinder(Tilemap tilemap, Vector3Int start, Vector3Int end){
@@ -171,8 +168,20 @@ public class GameController : MonoBehaviour
 		return path;
 	}
 
-	public void moveChamp(Transform champ, Vector3Int path){
-
+	IEnumerator moveUnit(Transform unit, List<Vector3Int> path){
+		foreach(Vector3Int breadCrumb in path){
+			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
+			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
+				unitIsMoving = true;
+				unit.position = Vector3.MoveTowards(unit.position, convertedDestination, Time.deltaTime * movementVelocity);
+				yield return null;
+			}
+			// while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
+			// 	unit.Translate(convertedDestination * Time.deltaTime);
+			// 	yield return null;
+			// }
+		}
+		unitIsMoving = false;
 	}
 }
 
