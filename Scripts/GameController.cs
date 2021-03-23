@@ -74,15 +74,12 @@ public class GameController : MonoBehaviour
 				if(hitBox.transform.tag == champsTag){
 					hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
 				}
-			}else{
-				somethingIsSelected = false;
-			}
-
-			if(somethingIsSelected){
 				foreach(Vector3Int walkArea in walkableArea(hitBox.transform)){
 					Vector3 convetedWalkArea = convertGidPosToWorldPos(walkArea);
 					Instantiate(debugBall, convetedWalkArea, Quaternion.identity, debugParent);
 				}
+			}else{
+				somethingIsSelected = false;
 			}
 		}
 
@@ -96,7 +93,7 @@ public class GameController : MonoBehaviour
 						if(unitIsMoving == false){
 							List<Vector3Int> path = new List<Vector3Int>();
 							Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-							path = pathFinder(floorTilemap, startPos, gridPos);
+							path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));
 
 							foreach (Transform child in debugParent) {
 								GameObject.Destroy(child.gameObject);
@@ -144,7 +141,7 @@ public class GameController : MonoBehaviour
 	}
 
 	//Pathfinder using Breadth First Search
-	public List<Vector3Int> pathFinder(Tilemap tilemap, Vector3Int start, Vector3Int end){
+	public List<Vector3Int> pathFinder(Tilemap tilemap, Vector3Int start, Vector3Int end, List<Vector3Int> walkableArea){
 		Queue<Vector3Int> frontier = new Queue<Vector3Int>();
 		frontier.Enqueue(start);
 
@@ -163,9 +160,11 @@ public class GameController : MonoBehaviour
 			}
 
 			foreach(Vector3Int neighbor in neighbors){
-				if(tilemap.GetTile(neighbor) != null){
+				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
 					if(!came_from.ContainsKey(neighbor)){
-						frontier.Enqueue(neighbor);
+						if(!frontier.Contains(neighbor)){
+							frontier.Enqueue(neighbor);
+						}
 						came_from.Add(neighbor, current);
 					}
 				}
@@ -177,9 +176,15 @@ public class GameController : MonoBehaviour
 
 		while(current != start){
 			path.Add(current);
-			current = came_from[current];
+			try{
+				current = came_from[current];
+			}catch (Exception e){
+				print("errou!");
+				return new List<Vector3Int>() {};
+			}
 		}
 
+		path.Add(start);
 		path.Reverse();
 
 		return path;
@@ -206,23 +211,53 @@ public class GameController : MonoBehaviour
 		List<Vector3Int> walkable = new List<Vector3Int>();
 		int speed = unit.GetComponent<ChampsBehaviour>().speed;
 		int rows = (2 * speed) + 1;
-		int cells = speed + 1;
 
 		Vector3Int unitPos = unit.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 		Vector3Int startingPoint = new Vector3Int(unitPos.x - speed, unitPos.y + speed, unitPos.z);
 
+
 		for(int i = 0; i < rows; i++){
 			for(int c = 0; c < rows; c++){
-				if(i <= speed){
-					if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2)){
-						walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
-					}
-				}else{
-					if(i + c > (speed + 1) + 2 * (i - speed - 1) && i + c <= speed * 3){
-						walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
+				if(floorTilemap.GetTile(startingPoint + new Vector3Int(i, -c, 0)) != null){
+					if(i <= speed){
+						if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2)){
+							walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
+						}
+					}else{
+						if(i + c > (speed - 1) + 2 * (i - speed) && i + c <= speed * 3){
+							walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
+						}
 					}
 				}
 			}
+		}
+
+		List<Vector3Int> allPaths = new List<Vector3Int>();
+		List<Vector3Int> toRemove = new List<Vector3Int>();
+		int stepsCounter = 0;
+
+		foreach(Vector3Int cell in walkable){
+			allPaths = pathFinder(floorTilemap, cell, unitPos, walkable);
+
+			if(allPaths.Count > 0){
+				for(int i = 0; i < allPaths.Count - 1; i++){
+					if(allPaths[i].x != allPaths[i + 1].x && allPaths[i].y != allPaths[i + 1].y){
+						stepsCounter += 2;
+					}else{
+						stepsCounter++;
+					}
+				}
+				if(stepsCounter > speed){
+					toRemove.Add(cell);
+				}
+				stepsCounter = 0;
+			}else{
+				toRemove.Add(cell);
+			}
+		}
+
+		foreach(Vector3Int cellToRemove in toRemove){
+			walkable.Remove(cellToRemove);
 		}
 
 		return walkable;
