@@ -2042,6 +2042,36 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
+--- !u!1 &284480563
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 284480564}
+  m_Layer: 0
+  m_Name: WalkableArea
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &284480564
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 284480563}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1350636538}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &291509091
 GameObject:
   m_ObjectHideFlags: 0
@@ -5410,6 +5440,7 @@ MonoBehaviour:
   debugParent: {fileID: 1513796033}
   boundsCoordsDisplay: {fileID: 2054050809}
   vector3CoordsDisplay: {fileID: 1470535166}
+  displayCoordinates: 0
   normalCursor: {fileID: 21300000, guid: 5ac8acc592500df45870874fb274a6a8, type: 3}
   xCursor: {fileID: 21300000, guid: 21628736160fcc9488493401da3ef621, type: 3}
   attackCursor: {fileID: 21300000, guid: 2d18e23e3ce249b4489b8bcdd02d3f48, type: 3}
@@ -5419,6 +5450,9 @@ MonoBehaviour:
   unitTileOffset: 0.001
   movementVelocity: 4
   unitIsMoving: 0
+  walkableDots: {fileID: 3767503787710419202, guid: 7212e3d5edbf85d459d50c68fbd7f535,
+    type: 3}
+  walkableDotsParent: {fileID: 284480564}
 --- !u!4 &1350636538
 Transform:
   m_ObjectHideFlags: 0
@@ -5431,6 +5465,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1242703883}
+  - {fileID: 284480564}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -5490,7 +5525,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: vector3
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5779,7 +5814,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: bounds
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

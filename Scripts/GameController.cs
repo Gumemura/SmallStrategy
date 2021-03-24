@@ -30,6 +30,10 @@ public class GameController : MonoBehaviour
 	public float movementVelocity;
 	[HideInInspector]public bool unitIsMoving;
 
+	[Header("UI")]
+	public Transform walkableDots;
+	public Transform walkableDotsParent;
+
 	private string champsTag = "Champ";
 	private SpriteRenderer cursorSpriteRenderer;
 	private GameObject[] allHeroes;
@@ -90,16 +94,15 @@ public class GameController : MonoBehaviour
 			foreach(GameObject hero in allHeroes){
 				hero.transform.GetComponent<ChampsBehaviour>().turnOnSelection(false);
 			}
+			foreach (Transform blueDot in walkableDotsParent) {
+				GameObject.Destroy(blueDot.gameObject);
+			}
 				  
 			if (hitBox.collider != null) {
 				somethingIsSelected = true;
 				if(hitBox.transform.tag == champsTag){
 					hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
-				}
-				//Rendering the walkable area
-				foreach(Vector3Int walkArea in walkableArea(hitBox.transform)){
-					Vector3 convetedWalkArea = convertGidPosToWorldPos(walkArea);
-					Instantiate(debugBall, convetedWalkArea, Quaternion.identity, debugParent);
+					walkableArea(hitBox.transform);
 				}
 			}else{
 				somethingIsSelected = false;
@@ -121,10 +124,6 @@ public class GameController : MonoBehaviour
 						StartCoroutine(moveUnit(hitBox.transform, path)); //Moving
 
 						//rendering the path
-						foreach(Vector3Int cell in path){
-							Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
-							Instantiate(debugBall, convetedPath, Quaternion.identity, debugParent);
-						}
 					}
 				}
 			}	
@@ -204,7 +203,7 @@ public class GameController : MonoBehaviour
 			path.Add(current);
 			try{
 				current = came_from[current];
-			}catch (Exception e){//if a error is found (KeyNotFound) it means that the user ordened a movement outside the walkable area, so we return a empty list
+			}catch (Exception){//if a error is found (KeyNotFound) it means that the user ordened a movement outside the walkable area, so we return a empty list
 				return new List<Vector3Int>() {};
 			}
 		}
@@ -218,6 +217,9 @@ public class GameController : MonoBehaviour
 
 	//Moving the unit
 	IEnumerator moveUnit(Transform unit, List<Vector3Int> path){
+		foreach (Transform blueDot in walkableDotsParent) {
+			GameObject.Destroy(blueDot.gameObject);
+		}
 		foreach(Vector3Int breadCrumb in path){
 			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
 			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
@@ -227,6 +229,7 @@ public class GameController : MonoBehaviour
 			}
 		}
 		unitIsMoving = false;
+		walkableArea(unit.transform);
 	}
 
 	//Calculaing walkable area
@@ -286,7 +289,7 @@ public class GameController : MonoBehaviour
 		}
 
 		//correting the walkable area by removing the ones the unit cannot reach
-		//basicaly this is whats its being doing: for each cell in the walkable area find its path to the unti position
+		//basicaly this is whats its being doing: for each cell in the walkable area find its path to the unit position
 		//if the distance is higher tha the unit's speed, removes it
 		List<Vector3Int> allPaths = new List<Vector3Int>();
 		List<Vector3Int> toRemove = new List<Vector3Int>();
@@ -314,6 +317,11 @@ public class GameController : MonoBehaviour
 
 		foreach(Vector3Int cellToRemove in toRemove){
 			walkable.Remove(cellToRemove);
+		}
+
+		foreach(Vector3Int cell in walkable){
+			Vector3 convetedWalkArea = convertGidPosToWorldPos(cell);
+			Instantiate(walkableDots, convetedWalkArea, Quaternion.identity, walkableDotsParent);
 		}
 
 		return walkable;
