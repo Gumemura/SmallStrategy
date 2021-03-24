@@ -11,13 +11,15 @@ public class GameController : MonoBehaviour
 	[Header("Debug")]
 	public Transform debugBall;
 	public Transform debugParent;
-	[SerializeField] TextMeshProUGUI boundsCoordsDisplay;
-	[SerializeField] TextMeshProUGUI vector3CoordsDisplay;
+	public TextMeshProUGUI boundsCoordsDisplay;
+	public TextMeshProUGUI vector3CoordsDisplay;
+	public bool displayCoordinates;
 
 	[Header("Cursor sprites")]
 	public Sprite normalCursor;
 	public Sprite xCursor;
 	public Sprite attackCursor;
+	[HideInInspector]public Transform cursorObject;
 	
 	[Header("Tile and Grid")]
 	public Grid gameGrid;
@@ -29,17 +31,23 @@ public class GameController : MonoBehaviour
 	[HideInInspector]public bool unitIsMoving;
 
 	private string champsTag = "Champ";
-	private SpriteRenderer spriteRenderer;
+	private SpriteRenderer cursorSpriteRenderer;
 	private GameObject[] allHeroes;
 	private bool somethingIsSelected;
 	private RaycastHit2D hitBox;
+	private Vector3 mousePosition;
+	private Vector3 gridPosToWorld;
+	private Vector3Int gridPos;
+	private bool unitCanMove;
 
 	void Start(){
+		//Reducing tilemap bounds to the place that contain tiles
 		floorTilemap.CompressBounds();
 
 		//Turning the default windows cursor off
 		Cursor.visible = false;
-		spriteRenderer = transform.GetComponent<SpriteRenderer>();
+		cursorObject = transform.Find("Cursor");
+		cursorSpriteRenderer = cursorObject.GetComponent<SpriteRenderer>();
 
 		//Filling the array with all controlable heros
 		allHeroes = GameObject.FindGameObjectsWithTag(champsTag);
@@ -48,21 +56,35 @@ public class GameController : MonoBehaviour
 		unitIsMoving = false;
 	}
 
+	//Upfating the cursor state
+	void CursorState(){
+		cursorObject.position = mousePosition;
+
+		if(floorTilemap.GetTile(gridPos) == null && somethingIsSelected){
+			cursorSpriteRenderer.sprite = xCursor;
+			unitCanMove = false;
+		}else{
+			cursorSpriteRenderer.sprite = normalCursor;
+			unitCanMove = true;
+		}
+
+	}
+
 	// Update is called once per frame
 	void Update(){
-		spriteRenderer.sprite = normalCursor;
+		mousePosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition); //cursor position
+		gridPos = gameGrid.WorldToCell(mousePosition);//coordinates of the cell that cursor in below (vector3int)
+		gridPosToWorld = convertGidPosToWorldPos(gridPos);//converted coordinate of the frid position to world coords (vector3)
 
-		Vector3 mousePos = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
-		transform.position = mousePos;
+		CursorState();
 
-		Vector3Int gridPos = gameGrid.WorldToCell(mousePos);
-		Vector3 gridPosToWorld = gameGrid.CellToWorld(gridPos) + new Vector3(0, gameGrid.cellSize.y/2, 0);
-
-		boundsCoordsDisplay.text = gridPos.x + " " + gridPos.y;
-		vector3CoordsDisplay.text = gridPosToWorld.x + " " + gridPosToWorld.y;
+		if(displayCoordinates){
+			boundsCoordsDisplay.text = gridPos.x + " " + gridPos.y;
+			vector3CoordsDisplay.text = gridPosToWorld.x + " " + gridPosToWorld.y;
+		}
 
 		if(Input.GetMouseButtonDown(0)){
-			hitBox = Physics2D.Raycast(mousePos, Vector2.zero);
+			hitBox = Physics2D.Raycast(mousePosition, Vector2.zero);//The object that have been hit
 
 			//Deselecting all heros
 			foreach(GameObject hero in allHeroes){
@@ -74,6 +96,7 @@ public class GameController : MonoBehaviour
 				if(hitBox.transform.tag == champsTag){
 					hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
 				}
+				//Rendering the walkable area
 				foreach(Vector3Int walkArea in walkableArea(hitBox.transform)){
 					Vector3 convetedWalkArea = convertGidPosToWorldPos(walkArea);
 					Instantiate(debugBall, convetedWalkArea, Quaternion.identity, debugParent);
@@ -84,26 +107,23 @@ public class GameController : MonoBehaviour
 		}
 
 		if(somethingIsSelected){
-			if(floorTilemap.GetTile(gridPos) == null){
-				spriteRenderer.sprite = xCursor;
-			}else{
-				if(Input.GetMouseButtonDown(1)){
-					if(hitBox.transform.tag == champsTag){
-						//Movement
-						if(unitIsMoving == false){
-							List<Vector3Int> path = new List<Vector3Int>();
-							Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-							path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));
+			if(Input.GetMouseButtonDown(1)){
+				if(hitBox.transform.tag == champsTag){
+					//Movement of unit
+					if(unitIsMoving == false && unitCanMove){
+						List<Vector3Int> path = new List<Vector3Int>();//list with all cells the unit will move trought to reach the destination
+						Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);//the position fo the unit
+						path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));//grabing the list of the cells to go through
 
-							foreach (Transform child in debugParent) {
-								GameObject.Destroy(child.gameObject);
-							}
-							StartCoroutine(moveUnit(hitBox.transform, path));
+						foreach (Transform child in debugParent) {
+							GameObject.Destroy(child.gameObject);
+						}
+						StartCoroutine(moveUnit(hitBox.transform, path)); //Moving
 
-							foreach(Vector3Int cell in path){
-								Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
-								Instantiate(debugBall, convetedPath, Quaternion.identity, debugParent);
-							}
+						//rendering the path
+						foreach(Vector3Int cell in path){
+							Vector3 convetedPath = gameGrid.CellToWorld(cell) + new Vector3(0, gameGrid.cellSize.y/2, 0);
+							Instantiate(debugBall, convetedPath, Quaternion.identity, debugParent);
 						}
 					}
 				}
@@ -111,11 +131,13 @@ public class GameController : MonoBehaviour
 		}
 	}
 
-	public Vector3 convertGidPosToWorldPos(Vector3Int gridPos){
-		return gameGrid.CellToWorld(gridPos) + new Vector3(0, gameGrid.cellSize.y/2, 0);
+	//Receives a Vector3Int and returns the center of the cell 
+	public Vector3 convertGidPosToWorldPos(Vector3Int gridPosition){
+		return gameGrid.CellToWorld(gridPosition) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
 	//Returns all neighbors
+	//Used by pathfinder
 	private List<Vector3Int> getNeighbors(Vector3Int home){
 		List<Vector3Int> neighbors = new List<Vector3Int>();
 
@@ -146,26 +168,29 @@ public class GameController : MonoBehaviour
 		frontier.Enqueue(start);
 
 		Dictionary<Vector3Int, Vector3Int> came_from = new Dictionary<Vector3Int, Vector3Int>();
-		came_from.Add(start, default(Vector3Int));
+		came_from.Add(start, default(Vector3Int));//dicitionary where will be stored a cell coords and from which cell it came from
 
 		Vector3Int current;
 		List<Vector3Int> neighbors; 
 
 		while(frontier.Count != 0){
 			current = frontier.Dequeue();
-			neighbors = getNeighbors(current);
+			neighbors = getNeighbors(current);//getting all 8 neighbors
 
-			if(current == end){
+			if(current == end){//if the current cell is the destination, break bcz we found the path we were looking for
 				break;
 			}
 
-			foreach(Vector3Int neighbor in neighbors){
+			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
+				//if that coord have a tile AND its in the walkable area, proceed
 				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
+					//if we didn't check this cell, lets check it
 					if(!came_from.ContainsKey(neighbor)){
+						//if its not alredy on the queue, add it so this cell wil be checked later
 						if(!frontier.Contains(neighbor)){
 							frontier.Enqueue(neighbor);
 						}
-						came_from.Add(neighbor, current);
+						came_from.Add(neighbor, current);//add the cell and where it came from
 					}
 				}
 			}
@@ -174,22 +199,24 @@ public class GameController : MonoBehaviour
 		current = end;
 		List<Vector3Int> path = new List<Vector3Int>();
 
+		//Now, to find the best path, we just check the dictionary from the end to the beginning and it will give us the path
 		while(current != start){
 			path.Add(current);
 			try{
 				current = came_from[current];
-			}catch (Exception e){
-				print("errou!");
+			}catch (Exception e){//if a error is found (KeyNotFound) it means that the user ordened a movement outside the walkable area, so we return a empty list
 				return new List<Vector3Int>() {};
 			}
 		}
 
-		path.Add(start);
-		path.Reverse();
+		path.Add(start);//adding the starting point. its not necessary to move the unit as it stands below the starting poing (it will not have to move to tha starting point)
+		//but its important when adjusting the walkable area so we can properly measure the cost fo movement
+		path.Reverse();//reversing
 
 		return path;
 	}
 
+	//Moving the unit
 	IEnumerator moveUnit(Transform unit, List<Vector3Int> path){
 		foreach(Vector3Int breadCrumb in path){
 			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
@@ -198,16 +225,42 @@ public class GameController : MonoBehaviour
 				unit.position = Vector3.MoveTowards(unit.position, convertedDestination, Time.deltaTime * movementVelocity);
 				yield return null;
 			}
-			// while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
-			// 	unit.Translate(convertedDestination * Time.deltaTime);
-			// 	yield return null;
-			// }
 		}
 		unitIsMoving = false;
 	}
 
 	//Calculaing walkable area
 	public List<Vector3Int> walkableArea(Transform unit){
+		/* those ilustrations will help you to undernstand the pathfinder method
+
+		imagine a unit with speed 3 (aka he can move up to 3 cells), which 'x' is his position on the grid below. 
+			  0 1 2 3 4 5 6
+			0 - - - - - - -
+			1 - - - - - - - 
+			2 - - - - - - - 
+			3 - - - x - - - 
+			4 - - - - - - - 
+			5 - - - - - - - 
+			6 - - - - - - - 
+
+		as long as he have 3 speed, he can move to the cells represented by '0'
+			  0 1 2 3 4 5 6
+			0 - - - 0 - - -
+			1 - - 0 0 0 - - 
+			2 - 0 0 0 0 0 - 
+			3 0 0 0 x 0 0 0 
+			4 - 0 0 0 0 0 - 
+			5 - - 0 0 0 - - 
+			6 - - - 0 - - - 
+
+		we chose the cell (0, 0) to starting going through the bidimensional array, below represented as the variable 'startingPoint': its just the unit position minus his speed (the 
+		'y' axis is plus due to the grid orientation. check the unity inspection)
+
+		the variable 'rows' is the dimension of the array
+
+		the two 'ifs' below ('if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2))' and 'if(i + c > (speed - 1) + 2 * (i - speed) && i + c <= speed * 3)') restrict the selection to the 
+		cells og the diamong shape
+		*/
 		List<Vector3Int> walkable = new List<Vector3Int>();
 		int speed = unit.GetComponent<ChampsBehaviour>().speed;
 		int rows = (2 * speed) + 1;
@@ -232,6 +285,9 @@ public class GameController : MonoBehaviour
 			}
 		}
 
+		//correting the walkable area by removing the ones the unit cannot reach
+		//basicaly this is whats its being doing: for each cell in the walkable area find its path to the unti position
+		//if the distance is higher tha the unit's speed, removes it
 		List<Vector3Int> allPaths = new List<Vector3Int>();
 		List<Vector3Int> toRemove = new List<Vector3Int>();
 		int stepsCounter = 0;
