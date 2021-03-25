@@ -48,12 +48,13 @@ public class GameController : MonoBehaviour
 	private Vector3Int tempGridPosition;
 	private Vector3Int selectecUnitPosition;
 	private List<Vector3Int> selectedUnitWalkableArea;
-	private LineRenderer selectedUnitLineRenderer;
-
+	private LineRenderer lineRenderer;
 
 	void Start(){
 		//Reducing tilemap bounds to the place that contain tiles
 		floorTilemap.CompressBounds();
+
+		lineRenderer = transform.GetComponent<LineRenderer>();
 
 		//Turning the default windows cursor off
 		Cursor.visible = false;
@@ -108,9 +109,8 @@ public class GameController : MonoBehaviour
 			}
 
 			//turning off the steps line
-			if(selectedUnitLineRenderer){
-				selectedUnitLineRenderer.positionCount = 0;
-			}
+			lineRenderer.positionCount = 0;
+			
 				  
 			if (hitBox.collider != null) {
 				somethingIsSelected = true;
@@ -119,7 +119,6 @@ public class GameController : MonoBehaviour
 
 					selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 					selectedUnitWalkableArea = walkableArea(hitBox.transform);
-					selectedUnitLineRenderer = hitBox.transform.GetComponent<LineRenderer>();
 				}
 			}else{
 				somethingIsSelected = false;
@@ -142,15 +141,13 @@ public class GameController : MonoBehaviour
 						convertedGridPosition = convertGidPosToWorldPos(cell);
 						convertedPath[index++] = convertedGridPosition;
 					}
-					selectedUnitLineRenderer.positionCount = index;
-					selectedUnitLineRenderer.SetPositions(convertedPath);
+					lineRenderer.positionCount = index;
+					lineRenderer.SetPositions(convertedPath);
 				}
 			}else if(!selectedUnitWalkableArea.Contains(gridPos) || unitIsMoving){
-				selectedUnitLineRenderer.positionCount = 0;
+				lineRenderer.positionCount = 0;
 				actionCostText.text = "";
 			}
-
-			
 
 			if(Input.GetMouseButtonDown(1)){
 				if(hitBox.transform.tag == champsTag){
@@ -262,18 +259,17 @@ public class GameController : MonoBehaviour
 			GameObject.Destroy(blueDot.gameObject);
 		}
 
-		//turnign off the apths line
-		unit.transform.GetComponent<LineRenderer>().positionCount = 0;
-
+		unitIsMoving = true;
+		unit.transform.GetComponent<Animator>().SetBool("isMoving", true);
 		foreach(Vector3Int breadCrumb in path){
 			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
 			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
-				unitIsMoving = true;
 				unit.position = Vector3.MoveTowards(unit.position, convertedDestination, Time.deltaTime * movementVelocity);
 				yield return null;
 			}
 		}
 		unitIsMoving = false;
+		unit.transform.GetComponent<Animator>().SetBool("isMoving", false);
 
 		//ipdating units position on grid
 		selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
