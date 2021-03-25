@@ -128,23 +128,25 @@ public class GameController : MonoBehaviour
 
 		if(somethingIsSelected){
 			//rendering path before user choses path
-			if(tempGridPosition != gridPos && selectedUnitWalkableArea.Contains(gridPos) && unitIsMoving == false){
+			if(tempGridPosition != gridPos){
 				tempGridPosition = gridPos;
-				Vector3 convertedGridPosition;
-				List<Vector3Int> path = pathFinder(floorTilemap, selectecUnitPosition, tempGridPosition, selectedUnitWalkableArea);
-				Vector3[] convertedPath = new Vector3[path.Count];
-				int index = 0;
+				if(selectedUnitWalkableArea.Contains(tempGridPosition) && unitIsMoving == false){
+					Vector3 convertedGridPosition;
+					List<Vector3Int> path = pathFinder(floorTilemap, selectecUnitPosition, tempGridPosition, selectedUnitWalkableArea);
+					Vector3[] convertedPath = new Vector3[path.Count];
+					int index = 0;
 
-				actionCostText.text = MovementCostCalculation(path).ToString();
+					actionCostText.text = MovementCostCalculation(path).ToString();
 
-				foreach(Vector3Int cell in path){
-					convertedGridPosition = convertGidPosToWorldPos(cell);
-					convertedPath[index++] = convertedGridPosition;
+					foreach(Vector3Int cell in path){
+						convertedGridPosition = convertGidPosToWorldPos(cell);
+						convertedPath[index++] = convertedGridPosition;
+					}
+					selectedUnitLineRenderer.positionCount = index;
+					selectedUnitLineRenderer.SetPositions(convertedPath);
 				}
-				selectedUnitLineRenderer.positionCount = index;
-				selectedUnitLineRenderer.SetPositions(convertedPath);
 			}else if(!selectedUnitWalkableArea.Contains(gridPos) || unitIsMoving){
-				//selectedUnitLineRenderer.positionCount = 0;
+				selectedUnitLineRenderer.positionCount = 0;
 				actionCostText.text = "";
 			}
 
