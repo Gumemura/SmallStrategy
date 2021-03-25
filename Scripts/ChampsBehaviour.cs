@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 public class ChampsBehaviour: MonoBehaviour
 {
 	public int speed;
-	public int remainingSpeed;
+	[HideInInspector]public int remainingSpeed;
 
 	void Start(){
 		remainingSpeed = speed;		

@@ -252,6 +252,12 @@ public class GameController : MonoBehaviour
 		return path;
 	}
 
+	public void FlipUnit(Transform unit, Vector3 target){
+		if(unit.GetComponent<SpriteRenderer>() && target.x != unit.transform.position.x){
+			unit.GetComponent<SpriteRenderer>().flipX = (target.x < unit.transform.position.x);
+		}
+	}
+
 	//Moving the unit
 	IEnumerator moveUnit(Transform unit, List<Vector3Int> path){
 		//destroying all walkable area dots
@@ -263,6 +269,9 @@ public class GameController : MonoBehaviour
 		unit.transform.GetComponent<Animator>().SetBool("isMoving", true);
 		foreach(Vector3Int breadCrumb in path){
 			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
+
+			FlipUnit(unit, convertedDestination);
+
 			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
 				unit.position = Vector3.MoveTowards(unit.position, convertedDestination, Time.deltaTime * movementVelocity);
 				yield return null;
@@ -271,7 +280,7 @@ public class GameController : MonoBehaviour
 		unitIsMoving = false;
 		unit.transform.GetComponent<Animator>().SetBool("isMoving", false);
 
-		//ipdating units position on grid
+		//Updating units position on grid
 		selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 
 		//calculating remaining speed
