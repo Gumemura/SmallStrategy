@@ -123,6 +123,8 @@ public class GameController : MonoBehaviour
 						}
 						StartCoroutine(moveUnit(hitBox.transform, path)); //Moving
 
+						hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
+
 						//rendering the path
 					}
 				}
@@ -265,12 +267,11 @@ public class GameController : MonoBehaviour
 		cells og the diamong shape
 		*/
 		List<Vector3Int> walkable = new List<Vector3Int>();
-		int speed = unit.GetComponent<ChampsBehaviour>().speed;
+		int speed = unit.GetComponent<ChampsBehaviour>().remainingSpeed;
 		int rows = (2 * speed) + 1;
 
 		Vector3Int unitPos = unit.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 		Vector3Int startingPoint = new Vector3Int(unitPos.x - speed, unitPos.y + speed, unitPos.z);
-
 
 		for(int i = 0; i < rows; i++){
 			for(int c = 0; c < rows; c++){
@@ -325,6 +326,18 @@ public class GameController : MonoBehaviour
 		}
 
 		return walkable;
+	}
+
+	public int MovementCostCalculation(List<Vector3Int> path){
+		int pathCost = 0;
+		for(int i = 0; i < path.Count - 1; i++){
+			if(path[i].x != path[i + 1].x && path[i].y != path[i + 1].y){
+				pathCost += 2;
+			}else{
+				pathCost++;
+			}
+		}
+		return pathCost;
 	}
 }
 

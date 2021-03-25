@@ -75,22 +75,22 @@ PrefabInstance:
     - target: {fileID: 7550862911152456805, guid: c2721da328e59ba45842e13c93080bb6,
         type: 3}
       propertyPath: m_Name
-      value: WalkableCells
+      value: WalkableCells Variant
       objectReference: {fileID: 0}
     - target: {fileID: 8167399938343273882, guid: c2721da328e59ba45842e13c93080bb6,
         type: 3}
       propertyPath: m_Color.b
-      value: 1
+      value: 0.5188679
       objectReference: {fileID: 0}
     - target: {fileID: 8167399938343273882, guid: c2721da328e59ba45842e13c93080bb6,
         type: 3}
       propertyPath: m_Color.g
-      value: 0.26735568
+      value: 0.41000208
       objectReference: {fileID: 0}
     - target: {fileID: 8167399938343273882, guid: c2721da328e59ba45842e13c93080bb6,
         type: 3}
       propertyPath: m_Color.r
-      value: 0.19339621
+      value: 0.3989409
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c2721da328e59ba45842e13c93080bb6, type: 3}

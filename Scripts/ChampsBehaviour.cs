@@ -6,6 +6,11 @@ using UnityEngine.Tilemaps;
 public class ChampsBehaviour: MonoBehaviour
 {
 	public int speed;
+	public int remainingSpeed;
+
+	void Start(){
+		remainingSpeed = speed;		
+	}
 
 	public void turnOnSelection(bool active){
 		Transform selectionCircle = transform.Find("Selected");
