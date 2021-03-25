@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using TMPro; 
 using System;
+using UnityEditor;
 
 
 public class GameController : MonoBehaviour
@@ -20,7 +21,8 @@ public class GameController : MonoBehaviour
 	public Sprite xCursor;
 	public Sprite attackCursor;
 	[HideInInspector]public Transform cursorObject;
-	
+	public TextMeshProUGUI actionCostText;
+
 	[Header("Tile and Grid")]
 	public Grid gameGrid;
 	public Tilemap floorTilemap;
@@ -43,6 +45,11 @@ public class GameController : MonoBehaviour
 	private Vector3 gridPosToWorld;
 	private Vector3Int gridPos;
 	private bool unitCanMove;
+	private Vector3Int tempGridPosition;
+	private Vector3Int selectecUnitPosition;
+	private List<Vector3Int> selectedUnitWalkableArea;
+	private LineRenderer selectedUnitLineRenderer;
+
 
 	void Start(){
 		//Reducing tilemap bounds to the place that contain tiles
@@ -94,15 +101,25 @@ public class GameController : MonoBehaviour
 			foreach(GameObject hero in allHeroes){
 				hero.transform.GetComponent<ChampsBehaviour>().turnOnSelection(false);
 			}
+
+			//removing previous walkable area dots
 			foreach (Transform blueDot in walkableDotsParent) {
 				GameObject.Destroy(blueDot.gameObject);
+			}
+
+			//turning off the steps line
+			if(selectedUnitLineRenderer){
+				selectedUnitLineRenderer.positionCount = 0;
 			}
 				  
 			if (hitBox.collider != null) {
 				somethingIsSelected = true;
 				if(hitBox.transform.tag == champsTag){
 					hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
-					walkableArea(hitBox.transform);
+
+					selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+					selectedUnitWalkableArea = walkableArea(hitBox.transform);
+					selectedUnitLineRenderer = hitBox.transform.GetComponent<LineRenderer>();
 				}
 			}else{
 				somethingIsSelected = false;
@@ -110,22 +127,41 @@ public class GameController : MonoBehaviour
 		}
 
 		if(somethingIsSelected){
+			//rendering path before user choses path
+			if(tempGridPosition != gridPos && selectedUnitWalkableArea.Contains(gridPos) && unitIsMoving == false){
+				tempGridPosition = gridPos;
+				Vector3 convertedGridPosition;
+				List<Vector3Int> path = pathFinder(floorTilemap, selectecUnitPosition, tempGridPosition, selectedUnitWalkableArea);
+				Vector3[] convertedPath = new Vector3[path.Count];
+				int index = 0;
+
+				actionCostText.text = MovementCostCalculation(path).ToString();
+
+				foreach(Vector3Int cell in path){
+					convertedGridPosition = convertGidPosToWorldPos(cell);
+					convertedPath[index++] = convertedGridPosition;
+				}
+				selectedUnitLineRenderer.positionCount = index;
+				selectedUnitLineRenderer.SetPositions(convertedPath);
+			}else if(!selectedUnitWalkableArea.Contains(gridPos) || unitIsMoving){
+				//selectedUnitLineRenderer.positionCount = 0;
+				actionCostText.text = "";
+			}
+
+			
+
 			if(Input.GetMouseButtonDown(1)){
 				if(hitBox.transform.tag == champsTag){
 					//Movement of unit
 					if(unitIsMoving == false && unitCanMove){
 						List<Vector3Int> path = new List<Vector3Int>();//list with all cells the unit will move trought to reach the destination
-						Vector3Int startPos = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);//the position fo the unit
+						Vector3Int startPos = selectecUnitPosition;//the position fo the unit
 						path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));//grabing the list of the cells to go through
 
 						foreach (Transform child in debugParent) {
 							GameObject.Destroy(child.gameObject);
 						}
 						StartCoroutine(moveUnit(hitBox.transform, path)); //Moving
-
-						hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
-
-						//rendering the path
 					}
 				}
 			}	
@@ -219,9 +255,14 @@ public class GameController : MonoBehaviour
 
 	//Moving the unit
 	IEnumerator moveUnit(Transform unit, List<Vector3Int> path){
+		//destroying all walkable area dots
 		foreach (Transform blueDot in walkableDotsParent) {
 			GameObject.Destroy(blueDot.gameObject);
 		}
+
+		//turnign off the apths line
+		unit.transform.GetComponent<LineRenderer>().positionCount = 0;
+
 		foreach(Vector3Int breadCrumb in path){
 			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
 			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
@@ -231,7 +272,15 @@ public class GameController : MonoBehaviour
 			}
 		}
 		unitIsMoving = false;
-		walkableArea(unit.transform);
+
+		//ipdating units position on grid
+		selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+
+		//calculating remaining speed
+		//unit.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
+
+		//rendering the new walkable area and calculating new one
+		selectedUnitWalkableArea = walkableArea(unit.transform);
 	}
 
 	//Calculaing walkable area
