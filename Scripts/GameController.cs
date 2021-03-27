@@ -98,6 +98,7 @@ public class GameController : MonoBehaviour
 
 		if(Input.GetMouseButtonDown(0)){
 			hitBox = Physics2D.Raycast(mousePosition, Vector2.zero);//The object that have been hit
+			actionCostText.text = "";
 
 			//Deselecting all heros
 			foreach(GameObject hero in allHeroes){
@@ -137,6 +138,7 @@ public class GameController : MonoBehaviour
 					int index = 0;
 
 					actionCostText.text = MovementCostCalculation(path).ToString();
+					NormalizingPath(path);
 
 					foreach(Vector3Int cell in path){
 						convertedGridPosition = convertGidPosToWorldPos(cell);
@@ -157,6 +159,7 @@ public class GameController : MonoBehaviour
 						List<Vector3Int> path = new List<Vector3Int>();//list with all cells the unit will move trought to reach the destination
 						Vector3Int startPos = selectecUnitPosition;//the position fo the unit
 						path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));//grabing the list of the cells to go through
+						NormalizingPath(path);
 
 						foreach (Transform child in debugParent) {
 							GameObject.Destroy(child.gameObject);
@@ -173,6 +176,14 @@ public class GameController : MonoBehaviour
 		return gameGrid.CellToWorld(gridPosition) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
+	public void NormalizingPath(List<Vector3Int> path){
+		for(int i = 0; i < path.Count - 2; i++){
+			if(path[i].x != path[i + 2].x && path[i].y != path[i + 2].y){
+				path.Remove(path[i + 1]);
+			}
+		}
+	}
+
 	//Returns all neighbors
 	//Used by pathfinder
 	private List<Vector3Int> getNeighbors(Vector3Int home){
@@ -182,7 +193,7 @@ public class GameController : MonoBehaviour
 		if(floorTilemap.GetTile(home + Vector3Int.left) != null){neighbors.Add(home + Vector3Int.left);}
 		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
 		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
-		
+
 		// if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
 		// 	neighbors.Add(home + Vector3Int.down + Vector3Int.right);
 		// }
