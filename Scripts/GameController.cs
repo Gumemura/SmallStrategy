@@ -30,6 +30,7 @@ public class GameController : MonoBehaviour
 
 	[Header("Champs")]
 	public float movementVelocity;
+	public int movementCost;
 	[HideInInspector]public bool unitIsMoving;
 
 	[Header("UI")]
@@ -355,19 +356,7 @@ public class GameController : MonoBehaviour
 		foreach(Vector3Int cell in walkable){
 			allPaths = pathFinder(floorTilemap, cell, unitPos, walkable);
 
-			if(allPaths.Count > 0){
-				for(int i = 0; i < allPaths.Count - 1; i++){
-					if(allPaths[i].x != allPaths[i + 1].x && allPaths[i].y != allPaths[i + 1].y){
-						stepsCounter += 2;
-					}else{
-						stepsCounter++;
-					}
-				}
-				if(stepsCounter > speed){
-					toRemove.Add(cell);
-				}
-				stepsCounter = 0;
-			}else{
+			if(MovementCostCalculation(allPaths) > speed){
 				toRemove.Add(cell);
 			}
 		}
@@ -388,9 +377,9 @@ public class GameController : MonoBehaviour
 		int pathCost = 0;
 		for(int i = 0; i < path.Count - 1; i++){
 			if(path[i].x != path[i + 1].x && path[i].y != path[i + 1].y){
-				pathCost += 2;
+				pathCost += movementCost * 2;
 			}else{
-				pathCost++;
+				pathCost += movementCost;
 			}
 		}
 		return pathCost;
