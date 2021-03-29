@@ -80,7 +80,6 @@ public class GameController : MonoBehaviour
 			cursorSpriteRenderer.sprite = normalCursor;
 			unitCanMove = true;
 		}
-
 	}
 
 	// Update is called once per frame
@@ -138,7 +137,7 @@ public class GameController : MonoBehaviour
 					int index = 0;
 
 					actionCostText.text = MovementCostCalculation(path).ToString();
-					NormalizingPath(path);
+					NormalizingPath(path, hitBox.transform);
 
 					foreach(Vector3Int cell in path){
 						convertedGridPosition = convertGidPosToWorldPos(cell);
@@ -159,7 +158,9 @@ public class GameController : MonoBehaviour
 						List<Vector3Int> path = new List<Vector3Int>();//list with all cells the unit will move trought to reach the destination
 						Vector3Int startPos = selectecUnitPosition;//the position fo the unit
 						path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));//grabing the list of the cells to go through
-						NormalizingPath(path);
+						if(path.Count > 0){
+							NormalizingPath(path, hitBox.transform);
+						}
 
 						foreach (Transform child in debugParent) {
 							GameObject.Destroy(child.gameObject);
@@ -176,9 +177,46 @@ public class GameController : MonoBehaviour
 		return gameGrid.CellToWorld(gridPosition) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
-	public void NormalizingPath(List<Vector3Int> path){
+	public void NormalizingPath(List<Vector3Int> path, Transform unit){
+		Vector3Int destinationCell;
+		Vector3Int analisedCell;
+
+		Vector3Int origin = path[0];
+
+		int speedCounter = 0;
+
+		int x;
+		int y;
+
+		for(int i = path.Count - 1; i > 0; i--){
+			if(i < path.Count){
+				destinationCell = path[i];
+
+				x = (int)Mathf.Sign(origin.x - destinationCell.x);
+				y = (int)Mathf.Sign(Mathf.Abs(destinationCell.y) - Mathf.Abs(origin.y));
+
+				if(floorTilemap.GetTile(destinationCell + new Vector3Int(x, 0, 0)) != null && floorTilemap.GetTile(destinationCell + new Vector3Int(0, y, 0)) != null){
+					analisedCell = destinationCell + new Vector3Int(x, y, 0);
+					
+					while(!path.Contains(analisedCell)){
+						if(floorTilemap.GetTile(analisedCell) == null || (floorTilemap.GetTile(analisedCell + new Vector3Int(x, 0, 0)) == null && floorTilemap.GetTile(analisedCell + new Vector3Int(0, y, 0)) == null) ){
+							break;
+						}
+						analisedCell += new Vector3Int(x, y, 0);
+						speedCounter += movementCost;
+						if(speedCounter > unit.GetComponent<ChampsBehaviour>().remainingSpeed){
+							break;
+						}
+					}
+					if(path.Contains(analisedCell)){
+						path.RemoveRange(path.IndexOf(analisedCell) + 1, path.IndexOf(destinationCell) - path.IndexOf(analisedCell) - 1);
+					}
+					speedCounter = 0; 
+				}
+			}
+		}
 		for(int i = 0; i < path.Count - 2; i++){
-			if(path[i].x != path[i + 2].x && path[i].y != path[i + 2].y){
+			if(Mathf.Abs(Mathf.Abs(path[i].x) - Mathf.Abs(path[i + 2].x)) == 1 && Mathf.Abs(Mathf.Abs(path[i].y) - Mathf.Abs(path[i + 2].y)) == 1){
 				path.Remove(path[i + 1]);
 			}
 		}
@@ -294,8 +332,9 @@ public class GameController : MonoBehaviour
 
 		//Updating units position on grid
 		selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+		tempGridPosition = selectecUnitPosition;
 
-		//calculating remaining speed
+		//calculating remaining speed CHANGE
 		//unit.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
 
 		//rendering the new walkable area and calculating new one

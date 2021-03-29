@@ -6439,13 +6439,19 @@ PrefabInstance:
     - target: {fileID: 494582652686934092, guid: 636719d3a5ed57f40b3270b0fb500989,
         type: 3}
       propertyPath: speed
-      value: 8
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 494582652686935984, guid: 636719d3a5ed57f40b3270b0fb500989,
         type: 3}
       propertyPath: m_Name
       value: Archer
       objectReference: {fileID: 0}
+    - target: {fileID: 494582652686935985, guid: 636719d3a5ed57f40b3270b0fb500989,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: db5af5451c6e68b42887731f77a9c6cd,
+        type: 3}
     - target: {fileID: 494582652686935986, guid: 636719d3a5ed57f40b3270b0fb500989,
         type: 3}
       propertyPath: m_RootOrder
