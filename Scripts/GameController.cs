@@ -15,6 +15,7 @@ public class GameController : MonoBehaviour
 	public TextMeshProUGUI boundsCoordsDisplay;
 	public TextMeshProUGUI vector3CoordsDisplay;
 	public bool displayCoordinates;
+	public bool reduceSpeed;
 
 	[Header("Cursor sprites")]
 	public Sprite normalCursor;
@@ -26,6 +27,7 @@ public class GameController : MonoBehaviour
 	[Header("Tile and Grid")]
 	public Grid gameGrid;
 	public Tilemap floorTilemap;
+	public Tilemap blocksTilemap;
 	public float unitTileOffset;
 
 	[Header("Champs")]
@@ -73,13 +75,29 @@ public class GameController : MonoBehaviour
 	void CursorState(){
 		cursorObject.position = mousePosition;
 
-		if(floorTilemap.GetTile(gridPos) == null && somethingIsSelected){
-			cursorSpriteRenderer.sprite = xCursor;
-			unitCanMove = false;
-		}else{
-			cursorSpriteRenderer.sprite = normalCursor;
-			unitCanMove = true;
+		cursorSpriteRenderer.sprite = normalCursor;
+		unitCanMove = true;
+
+		if(somethingIsSelected){
+			if(ValidClickedPosition(gridPos) == false){
+				cursorSpriteRenderer.sprite = xCursor;
+				unitCanMove = false;
+			}
 		}
+	}
+
+	bool ValidClickedPosition(Vector3Int cell){
+		if(floorTilemap.GetTile(cell) == null){
+			return false;
+		}
+
+		foreach(GameObject hero in allHeroes){
+			if(cell == hero.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid)){
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	// Update is called once per frame
@@ -112,14 +130,15 @@ public class GameController : MonoBehaviour
 			//turning off the steps line
 			lineRenderer.positionCount = 0;
 			
-				  
 			if (hitBox.collider != null) {
-				somethingIsSelected = true;
-				if(hitBox.transform.tag == champsTag){
-					hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
+				if(unitIsMoving == false){
+					somethingIsSelected = true;
+					if(hitBox.transform.tag == champsTag){
+						hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
 
-					selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-					selectedUnitWalkableArea = walkableArea(hitBox.transform);
+						selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+						selectedUnitWalkableArea = walkableArea(hitBox.transform);
+					}
 				}
 			}else{
 				somethingIsSelected = false;
@@ -197,7 +216,7 @@ public class GameController : MonoBehaviour
 
 				if(floorTilemap.GetTile(destinationCell + new Vector3Int(x, 0, 0)) != null && floorTilemap.GetTile(destinationCell + new Vector3Int(0, y, 0)) != null){
 					analisedCell = destinationCell + new Vector3Int(x, y, 0);
-					
+
 					while(!path.Contains(analisedCell)){
 						if(floorTilemap.GetTile(analisedCell) == null || (floorTilemap.GetTile(analisedCell + new Vector3Int(x, 0, 0)) == null && floorTilemap.GetTile(analisedCell + new Vector3Int(0, y, 0)) == null) ){
 							break;
@@ -331,11 +350,13 @@ public class GameController : MonoBehaviour
 		unit.transform.GetComponent<Animator>().SetBool("isMoving", false);
 
 		//Updating units position on grid
-		selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+		selectecUnitPosition = unit.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 		tempGridPosition = selectecUnitPosition;
 
-		//calculating remaining speed CHANGE
-		//unit.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
+		//calculating remaining speed
+		if(reduceSpeed){
+			unit.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
+		}
 
 		//rendering the new walkable area and calculating new one
 		selectedUnitWalkableArea = walkableArea(unit.transform);

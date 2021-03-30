@@ -10,7 +10,7 @@ public class MapGenerator : MonoBehaviour
 	public TileBase blockTile;
 	public TileBase greenTile;
 
-	public GameObject forest;
+	//public GameObject forest;
 
 	private Tilemap floorTilemap;
 	private Tilemap gridTilemap;
@@ -35,8 +35,8 @@ public class MapGenerator : MonoBehaviour
         	for(int c = 0; c > -floorTilemap.size.y; c--){
         		checkingCell = new Vector3Int(i, c, floorOrigin.z);
         		if(floorTilemap.GetTile(checkingCell) == null){
-        			blockTilemap.SetTile(checkingCell, greenTile);
-        			Instantiate(forest, gamegrid.CellToWorld(checkingCell) + new Vector3(0, gamegrid.cellSize.y/2, 0), Quaternion.identity, this.transform);
+        			blockTilemap.SetTile(checkingCell, blockTile);
+        			//Instantiate(forest, gamegrid.CellToWorld(checkingCell) + new Vector3(0, gamegrid.cellSize.y/2, 0), Quaternion.identity, this.transform);
         		}
         	}
         }
