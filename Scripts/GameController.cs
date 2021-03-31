@@ -20,7 +20,9 @@ public class GameController : MonoBehaviour
 	[Header("Cursor sprites")]
 	public Sprite normalCursor;
 	public Sprite xCursor;
-	public Sprite attackCursor;
+	public Sprite meleeAttackCursor;
+	public Sprite rangedAttackCursor;
+
 	[HideInInspector]public Transform cursorObject;
 	public TextMeshProUGUI actionCostText;
 
@@ -40,19 +42,24 @@ public class GameController : MonoBehaviour
 	public Transform walkableDotsParent;
 
 	private string champsTag = "Champ";
+	private string enemyTag = "Enemy";
 	private SpriteRenderer cursorSpriteRenderer;
 	private GameObject[] allHeroes;
+	private GameObject[] allEnemies;
 	private bool somethingIsSelected;
 	private RaycastHit2D hitBox;
+	private RaycastHit2D hitBoxWithUnitSelected;
 	private Vector3 mousePosition;
 	private Vector3 gridPosToWorld;
-	private Vector3Int gridPos;
+	private Vector3Int mousePositionConvertedToGrid;
 	private bool unitCanMove;
 	private Vector3Int tempGridPosition;
 	private Vector3Int selectecUnitPosition;
 	private List<Vector3Int> selectedUnitWalkableArea;
 	private LineRenderer lineRenderer;
-
+	private List<Vector3Int> pathToMove = new List<Vector3Int>();
+	private bool canCalculatePath;
+	
 	void Start(){
 		//Reducing tilemap bounds to the place that contain tiles
 		floorTilemap.CompressBounds();
@@ -66,6 +73,7 @@ public class GameController : MonoBehaviour
 
 		//Filling the array with all controlable heros
 		allHeroes = GameObject.FindGameObjectsWithTag(champsTag);
+		allEnemies = GameObject.FindGameObjectsWithTag(enemyTag);
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
@@ -79,9 +87,17 @@ public class GameController : MonoBehaviour
 		unitCanMove = true;
 
 		if(somethingIsSelected){
-			if(ValidClickedPosition(gridPos) == false){
-				cursorSpriteRenderer.sprite = xCursor;
-				unitCanMove = false;
+			if(hitBox.transform.tag == champsTag){
+				if(ValidClickedPosition(mousePositionConvertedToGrid) == false){
+					cursorSpriteRenderer.sprite = xCursor;
+					unitCanMove = false;
+				}else if(hitBoxWithUnitSelected){
+					if(hitBox.transform.GetComponent<ChampsBehaviour>().isAttackMelee){
+						cursorSpriteRenderer.sprite = meleeAttackCursor;
+					}else{
+						cursorSpriteRenderer.sprite = rangedAttackCursor;
+					}
+				}
 			}
 		}
 	}
@@ -103,13 +119,13 @@ public class GameController : MonoBehaviour
 	// Update is called once per frame
 	void Update(){
 		mousePosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition); //cursor position
-		gridPos = gameGrid.WorldToCell(mousePosition);//coordinates of the cell that cursor in below (vector3int)
-		gridPosToWorld = convertGidPosToWorldPos(gridPos);//converted coordinate of the frid position to world coords (vector3)
+		mousePositionConvertedToGrid = gameGrid.WorldToCell(mousePosition);//coordinates of the cell that cursor in below (vector3int)
+		gridPosToWorld = convertGidPosToWorldPos(mousePositionConvertedToGrid);//converted coordinate of the frid position to world coords (vector3)
 
 		CursorState();
 
 		if(displayCoordinates){
-			boundsCoordsDisplay.text = gridPos.x + " " + gridPos.y;
+			boundsCoordsDisplay.text = mousePositionConvertedToGrid.x + " " + mousePositionConvertedToGrid.y;
 			vector3CoordsDisplay.text = gridPosToWorld.x + " " + gridPosToWorld.y;
 		}
 
@@ -131,7 +147,7 @@ public class GameController : MonoBehaviour
 			lineRenderer.positionCount = 0;
 			
 			if (hitBox.collider != null) {
-				if(unitIsMoving == false){
+				if(unitIsMoving == false ){
 					somethingIsSelected = true;
 					if(hitBox.transform.tag == champsTag){
 						hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
@@ -146,45 +162,47 @@ public class GameController : MonoBehaviour
 		}
 
 		if(somethingIsSelected){
-			//rendering path before user choses path
-			if(tempGridPosition != gridPos){
-				tempGridPosition = gridPos;
-				if(selectedUnitWalkableArea.Contains(tempGridPosition) && unitIsMoving == false){
-					Vector3 convertedGridPosition;
-					List<Vector3Int> path = pathFinder(floorTilemap, selectecUnitPosition, tempGridPosition, selectedUnitWalkableArea);
-					Vector3[] convertedPath = new Vector3[path.Count];
-					int index = 0;
+			if(hitBox.transform.tag == champsTag){
+				hitBoxWithUnitSelected = Physics2D.Raycast(mousePosition, Vector2.zero);
 
-					actionCostText.text = MovementCostCalculation(path).ToString();
-					NormalizingPath(path, hitBox.transform);
+				//rendering path before user choses path and calculating path
+				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected) && !unitIsMoving){
+					tempGridPosition = mousePositionConvertedToGrid;
+					if(selectedUnitWalkableArea.Contains(tempGridPosition) && unitIsMoving == false){
+						Vector3 convertedGridPosition;
+						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+						}
+						pathToMove = pathFinder(floorTilemap, selectecUnitPosition, tempGridPosition, selectedUnitWalkableArea);
 
-					foreach(Vector3Int cell in path){
-						convertedGridPosition = convertGidPosToWorldPos(cell);
-						convertedPath[index++] = convertedGridPosition;
+						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+							pathToMove.RemoveAt(pathToMove.Count - 1);
+						}
+
+						int index = 0;
+						Vector3[] convertedPath = new Vector3[pathToMove.Count];
+
+						actionCostText.text = MovementCostCalculation(pathToMove).ToString();
+						NormalizingPath(pathToMove, hitBox.transform);
+
+						foreach(Vector3Int cell in pathToMove){
+							convertedGridPosition = convertGidPosToWorldPos(cell);
+							convertedPath[index++] = convertedGridPosition;
+						}
+						lineRenderer.positionCount = index;
+						lineRenderer.SetPositions(convertedPath);
 					}
-					lineRenderer.positionCount = index;
-					lineRenderer.SetPositions(convertedPath);
-				}
-			}else if(!selectedUnitWalkableArea.Contains(gridPos) || unitIsMoving){
-				lineRenderer.positionCount = 0;
-				actionCostText.text = "";
+				}else if(!selectedUnitWalkableArea.Contains(mousePositionConvertedToGrid) || unitIsMoving){
+					lineRenderer.positionCount = 0;
+					actionCostText.text = "";
+				}				
 			}
 
 			if(Input.GetMouseButtonDown(1)){
 				if(hitBox.transform.tag == champsTag){
 					//Movement of unit
 					if(unitIsMoving == false && unitCanMove){
-						List<Vector3Int> path = new List<Vector3Int>();//list with all cells the unit will move trought to reach the destination
-						Vector3Int startPos = selectecUnitPosition;//the position fo the unit
-						path = pathFinder(floorTilemap, startPos, gridPos, walkableArea(hitBox.transform));//grabing the list of the cells to go through
-						if(path.Count > 0){
-							NormalizingPath(path, hitBox.transform);
-						}
-
-						foreach (Transform child in debugParent) {
-							GameObject.Destroy(child.gameObject);
-						}
-						StartCoroutine(moveUnit(hitBox.transform, path)); //Moving
+						StartCoroutine(moveUnit(hitBox.transform, pathToMove)); //Moving
 					}
 				}
 			}	
@@ -359,7 +377,9 @@ public class GameController : MonoBehaviour
 		}
 
 		//rendering the new walkable area and calculating new one
-		selectedUnitWalkableArea = walkableArea(unit.transform);
+		if(somethingIsSelected){
+			selectedUnitWalkableArea = walkableArea(unit.transform);
+		}
 	}
 
 	//Calculaing walkable area
