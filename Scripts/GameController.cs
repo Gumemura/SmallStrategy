@@ -58,8 +58,7 @@ public class GameController : MonoBehaviour
 	private List<Vector3Int> selectedUnitWalkableArea;
 	private LineRenderer lineRenderer;
 	private List<Vector3Int> pathToMove = new List<Vector3Int>();
-	private bool canCalculatePath;
-	
+
 	void Start(){
 		//Reducing tilemap bounds to the place that contain tiles
 		floorTilemap.CompressBounds();
@@ -166,7 +165,7 @@ public class GameController : MonoBehaviour
 				hitBoxWithUnitSelected = Physics2D.Raycast(mousePosition, Vector2.zero);
 
 				//rendering path before user choses path and calculating path
-				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected) && !unitIsMoving){
+				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected ) && !unitIsMoving){
 					tempGridPosition = mousePositionConvertedToGrid;
 					if(selectedUnitWalkableArea.Contains(tempGridPosition) && unitIsMoving == false){
 						Vector3 convertedGridPosition;
@@ -183,7 +182,7 @@ public class GameController : MonoBehaviour
 						Vector3[] convertedPath = new Vector3[pathToMove.Count];
 
 						actionCostText.text = MovementCostCalculation(pathToMove).ToString();
-						NormalizingPath(pathToMove, hitBox.transform);
+						//NormalizingPath(pathToMove, hitBox.transform);
 
 						foreach(Vector3Int cell in pathToMove){
 							convertedGridPosition = convertGidPosToWorldPos(cell);
@@ -195,13 +194,13 @@ public class GameController : MonoBehaviour
 				}else if(!selectedUnitWalkableArea.Contains(mousePositionConvertedToGrid) || unitIsMoving){
 					lineRenderer.positionCount = 0;
 					actionCostText.text = "";
-				}				
+				}
 			}
 
 			if(Input.GetMouseButtonDown(1)){
 				if(hitBox.transform.tag == champsTag){
 					//Movement of unit
-					if(unitIsMoving == false && unitCanMove){
+					if(unitIsMoving == false && unitCanMove && selectedUnitWalkableArea.Contains(mousePositionConvertedToGrid)){
 						StartCoroutine(moveUnit(hitBox.transform, pathToMove)); //Moving
 					}
 				}
@@ -214,6 +213,7 @@ public class GameController : MonoBehaviour
 		return gameGrid.CellToWorld(gridPosition) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
+	//removing edges corner to simulate diagonal movement
 	public void NormalizingPath(List<Vector3Int> path, Transform unit){
 		Vector3Int destinationCell;
 		Vector3Int analisedCell;
@@ -268,19 +268,6 @@ public class GameController : MonoBehaviour
 		if(floorTilemap.GetTile(home + Vector3Int.left) != null){neighbors.Add(home + Vector3Int.left);}
 		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
 		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
-
-		// if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
-		// 	neighbors.Add(home + Vector3Int.down + Vector3Int.right);
-		// }
-		// if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
-		// 	neighbors.Add(home + Vector3Int.up + Vector3Int.right);
-		// }
-		// if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
-		// 	neighbors.Add(home + Vector3Int.down + Vector3Int.left);
-		// }
-		// if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
-		// 	neighbors.Add(home + Vector3Int.up + Vector3Int.left);
-		// }
 
 		return neighbors;
 	}
