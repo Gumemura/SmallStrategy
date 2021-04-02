@@ -121,6 +121,46 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &152281737 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2827378713315231809, guid: 12e31611597258349a9aa6d20fbc674c,
+    type: 3}
+  m_PrefabInstance: {fileID: 2441445471896170231}
+  m_PrefabAsset: {fileID: 0}
+--- !u!60 &152281740
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 152281737}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.3, y: 0.052083332}
+    oldSize: {x: 2, y: 1.5}
+    newSize: {x: 0.32, y: 0.57}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: 0.5733966, y: -0.009921879}
+      - {x: 0.22234611, y: 0.22229426}
+      - {x: 0.201645, y: 0.8627285}
+      - {x: 0.11548373, y: 0.88138217}
+      - {x: -0.05806487, y: 0.6199745}
+      - {x: -0.061404847, y: 0.34552768}
+      - {x: -0.07048809, y: 0.33774328}
+      - {x: -0.57682335, y: -0.0017188452}
+      - {x: 0.008670065, y: -0.3503557}
 --- !u!1 &212827046
 GameObject:
   m_ObjectHideFlags: 0
@@ -2387,6 +2427,15 @@ Tilemap:
       m_TileColorIndex: 1
       m_TileObjectToInstantiateIndex: 65535
       m_AllTileFlags: 1073741825
+  - first: {x: 4, y: -2, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 1
+      m_TileSpriteIndex: 1
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 1
+      m_TileObjectToInstantiateIndex: 65535
+      m_AllTileFlags: 1073741825
   - first: {x: 5, y: -2, z: 0}
     second:
       serializedVersion: 2
@@ -2805,15 +2854,15 @@ Tilemap:
   m_TileAssetArray:
   - m_RefCount: 0
     m_Data: {fileID: 0}
-  - m_RefCount: 288
+  - m_RefCount: 289
     m_Data: {fileID: 11400000, guid: c0eb7a0e98e4a1a4a8be14b682c7545e, type: 2}
   m_TileSpriteArray:
   - m_RefCount: 0
     m_Data: {fileID: 0}
-  - m_RefCount: 288
+  - m_RefCount: 289
     m_Data: {fileID: 21300000, guid: 34193de5787588e4995dfd15cbe83a1c, type: 3}
   m_TileMatrixArray:
-  - m_RefCount: 288
+  - m_RefCount: 289
     m_Data:
       e00: 1
       e01: 0
@@ -2835,7 +2884,7 @@ Tilemap:
   - m_RefCount: 0
     m_Data: {r: -0.0000000013909265, g: -0.0000000013909265, b: -0.0000000013909265,
       a: -0.0000000013909265}
-  - m_RefCount: 288
+  - m_RefCount: 289
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
@@ -6243,7 +6292,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1350636536}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87b1736f02f575f4da1476f669444ee1, type: 3}
   m_Name: 
@@ -6538,6 +6587,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 494582652686934092, guid: 636719d3a5ed57f40b3270b0fb500989,
+        type: 3}
+      propertyPath: speed
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 494582652686934092, guid: 636719d3a5ed57f40b3270b0fb500989,
         type: 3}
       propertyPath: isAttackMelee
@@ -6929,6 +6983,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Skeletal
       objectReference: {fileID: 0}
+    - target: {fileID: 2827378713315231809, guid: 12e31611597258349a9aa6d20fbc674c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2827378713315231810, guid: 12e31611597258349a9aa6d20fbc674c,
         type: 3}
       propertyPath: m_Size.x
@@ -7004,5 +7063,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2827378713315231810, guid: 12e31611597258349a9aa6d20fbc674c, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 12e31611597258349a9aa6d20fbc674c, type: 3}

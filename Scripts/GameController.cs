@@ -6,6 +6,40 @@ using TMPro;
 using System;
 using UnityEditor;
 
+//used by A* pathfinder
+public class PriorityQueue{
+	List<Vector3Int> cells = new List<Vector3Int>();
+	List<int> cellPriority = new List<int>();
+
+	private int FindInsertIndex(int priority){
+		foreach(int p in cellPriority){
+			if(priority <= p){
+				return cellPriority.IndexOf(p);
+			}
+		}
+		return cellPriority.Count;
+	}
+
+	public void Add(Vector3Int cell, int priority){
+		int index = FindInsertIndex(priority);
+		cells.Insert(index, cell);
+		cellPriority.Insert(index, priority);
+	}
+
+	public Vector3Int Pop(){
+		Vector3Int cell = cells[0];
+		cells.RemoveAt(0);
+		cellPriority.RemoveAt(0);
+		return cell;
+	}
+
+	public void Print(){
+		int index = 0;
+		foreach(int p in cellPriority){
+			Console.WriteLine(p + ", " + cells[index++]);
+		}
+	}
+}
 
 public class GameController : MonoBehaviour
 {
@@ -90,7 +124,7 @@ public class GameController : MonoBehaviour
 				if(ValidClickedPosition(mousePositionConvertedToGrid) == false){
 					cursorSpriteRenderer.sprite = xCursor;
 					unitCanMove = false;
-				}else if(hitBoxWithUnitSelected){
+				}else if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 					if(hitBox.transform.GetComponent<ChampsBehaviour>().isAttackMelee){
 						cursorSpriteRenderer.sprite = meleeAttackCursor;
 					}else{
@@ -269,6 +303,19 @@ public class GameController : MonoBehaviour
 		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
 		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
 
+		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
+			neighbors.Add(home + Vector3Int.down + Vector3Int.right);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.right);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.down + Vector3Int.left);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.left);
+		}
+
 		return neighbors;
 	}
 
@@ -371,7 +418,7 @@ public class GameController : MonoBehaviour
 
 	//Calculaing walkable area
 	public List<Vector3Int> walkableArea(Transform unit){
-		/* those ilustrations will help you to undernstand the pathfinder method
+		/* those ilustrations will help you to undernstand how to find the walkable area
 
 		imagine a unit with speed 3 (aka he can move up to 3 cells), which 'x' is his position on the grid below. 
 			  0 1 2 3 4 5 6
@@ -411,15 +458,7 @@ public class GameController : MonoBehaviour
 		for(int i = 0; i < rows; i++){
 			for(int c = 0; c < rows; c++){
 				if(floorTilemap.GetTile(startingPoint + new Vector3Int(i, -c, 0)) != null){
-					if(i <= speed){
-						if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2)){
-							walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
-						}
-					}else{
-						if(i + c > (speed - 1) + 2 * (i - speed) && i + c <= speed * 3){
-							walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
-						}
-					}
+					walkable.Add(startingPoint + new Vector3Int(i, -c, 0));
 				}
 			}
 		}
@@ -433,7 +472,7 @@ public class GameController : MonoBehaviour
 		foreach(Vector3Int cell in walkable){
 			allPaths = pathFinder(floorTilemap, cell, unitPos, walkable);
 
-			if(MovementCostCalculation(allPaths) > speed || (MovementCostCalculation(allPaths) == 0 && cell != unitPos)){
+			if(MovementCostCalculation(allPaths) > speed || (MovementCostCalculation(allPaths) <= 0 && cell != unitPos)){
 				toRemove.Add(cell);
 			}
 		}
@@ -451,15 +490,7 @@ public class GameController : MonoBehaviour
 	}
 
 	public int MovementCostCalculation(List<Vector3Int> path){
-		int pathCost = 0;
-		for(int i = 0; i < path.Count - 1; i++){
-			if(path[i].x != path[i + 1].x && path[i].y != path[i + 1].y){
-				pathCost += movementCost * 2;
-			}else{
-				pathCost += movementCost;
-			}
-		}
-		return pathCost;
+		return path.Count - 1;
 	}
 }
 
