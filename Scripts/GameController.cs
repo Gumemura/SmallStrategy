@@ -6,41 +6,6 @@ using TMPro;
 using System;
 using UnityEditor;
 
-//used by A* pathfinder
-public class PriorityQueue{
-	List<Vector3Int> cells = new List<Vector3Int>();
-	List<int> cellPriority = new List<int>();
-
-	private int FindInsertIndex(int priority){
-		foreach(int p in cellPriority){
-			if(priority <= p){
-				return cellPriority.IndexOf(p);
-			}
-		}
-		return cellPriority.Count;
-	}
-
-	public void Add(Vector3Int cell, int priority){
-		int index = FindInsertIndex(priority);
-		cells.Insert(index, cell);
-		cellPriority.Insert(index, priority);
-	}
-
-	public Vector3Int Pop(){
-		Vector3Int cell = cells[0];
-		cells.RemoveAt(0);
-		cellPriority.RemoveAt(0);
-		return cell;
-	}
-
-	public void Print(){
-		int index = 0;
-		foreach(int p in cellPriority){
-			Console.WriteLine(p + ", " + cells[index++]);
-		}
-	}
-}
-
 public class GameController : MonoBehaviour
 {
 	[Header("Debug")]
@@ -491,6 +456,41 @@ public class GameController : MonoBehaviour
 
 	public int MovementCostCalculation(List<Vector3Int> path){
 		return path.Count - 1;
+	}
+}
+
+//used by A* pathfinder
+public class PriorityQueue{
+	List<Vector3Int> cells = new List<Vector3Int>();
+	List<int> cellPriority = new List<int>();
+
+	private int FindInsertIndex(int priority){
+		foreach(int p in cellPriority){
+			if(priority <= p){
+				return cellPriority.IndexOf(p);
+			}
+		}
+		return cellPriority.Count;
+	}
+
+	public void Add(Vector3Int cell, int priority){
+		int index = FindInsertIndex(priority);
+		cells.Insert(index, cell);
+		cellPriority.Insert(index, priority);
+	}
+
+	public Vector3Int Pop(){
+		Vector3Int cell = cells[0];
+		cells.RemoveAt(0);
+		cellPriority.RemoveAt(0);
+		return cell;
+	}
+
+	public void Print(){
+		int index = 0;
+		foreach(int p in cellPriority){
+			Console.WriteLine(p + ", " + cells[index++]);
+		}
 	}
 }
 
