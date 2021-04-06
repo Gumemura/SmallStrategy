@@ -167,7 +167,6 @@ public class GameController : MonoBehaviour
 				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected ) && !unitIsMoving){
 					tempGridPosition = mousePositionConvertedToGrid;
 					if(selectedUnitWalkableArea.Contains(tempGridPosition) && unitIsMoving == false){
-						Vector3 convertedGridPosition;
 						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 						}
@@ -178,6 +177,7 @@ public class GameController : MonoBehaviour
 						}
 
 						int index = 0;
+						Vector3 convertedGridPosition;
 						Vector3[] convertedPath = new Vector3[pathToMove.Count];
 
 						actionCostText.text = MovementCostCalculation(pathToMove).ToString();
@@ -264,39 +264,50 @@ public class GameController : MonoBehaviour
 		List<Vector3Int> neighbors = new List<Vector3Int>();
 
 		if(floorTilemap.GetTile(home + Vector3Int.up) != null){neighbors.Add(home + Vector3Int.up);}
+		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
 		if(floorTilemap.GetTile(home + Vector3Int.left) != null){neighbors.Add(home + Vector3Int.left);}
 		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
-		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
-
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.left);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.down + Vector3Int.left);
+		}
 		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
 			neighbors.Add(home + Vector3Int.down + Vector3Int.right);
 		}
 		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
 			neighbors.Add(home + Vector3Int.up + Vector3Int.right);
 		}
-		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
-			neighbors.Add(home + Vector3Int.down + Vector3Int.left);
-		}
-		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
-			neighbors.Add(home + Vector3Int.up + Vector3Int.left);
-		}
 
 		return neighbors;
 	}
 
+	private int HeuristicDistance(Vector3Int a, Vector3Int b){
+		//return Mathf.Abs(a.x - b.x) + Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));//the y axis is positivie bcz in tilemap y is decreasing
+		int dx = Mathf.Abs(a.x - b.x);
+		int dy = Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));
+
+		return movementCost * (dx + dy) + (movementCost - 2 * movementCost) * Mathf.Min(dx, dy);
+	}
+
 	//Pathfinder using Breadth First Search
 	public List<Vector3Int> pathFinder(Tilemap tilemap, Vector3Int start, Vector3Int end, List<Vector3Int> walkableArea){
-		Queue<Vector3Int> frontier = new Queue<Vector3Int>();
-		frontier.Enqueue(start);
+		PriorityQueue frontier = new PriorityQueue();
+		frontier.Add(start, 0);
 
 		Dictionary<Vector3Int, Vector3Int> came_from = new Dictionary<Vector3Int, Vector3Int>();
 		came_from.Add(start, default(Vector3Int));//dicitionary where will be stored a cell coords and from which cell it came from
 
+		Dictionary<Vector3Int, int> cost_so_far = new Dictionary<Vector3Int, int>();
+		cost_so_far.Add(start, 0);
+
 		Vector3Int current;
 		List<Vector3Int> neighbors; 
+		int new_cost, priority;
 
-		while(frontier.Count != 0){
-			current = frontier.Dequeue();
+		while(!frontier.IsEmpty()){
+			current = frontier.Pop();
 			neighbors = getNeighbors(current);//getting all 8 neighbors
 
 			if(current == end){//if the current cell is the destination, break bcz we found the path we were looking for
@@ -304,15 +315,25 @@ public class GameController : MonoBehaviour
 			}
 
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
-				//if that coord have a tile AND its in the walkable area, proceed
 				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
-					//if we didn't check this cell, lets check it
-					if(!came_from.ContainsKey(neighbor)){
-						//if its not alredy on the queue, add it so this cell wil be checked later
-						if(!frontier.Contains(neighbor)){
-							frontier.Enqueue(neighbor);
+					new_cost = cost_so_far[current] + movementCost;
+					if(!cost_so_far.ContainsKey(neighbor) || new_cost < cost_so_far[neighbor]){
+
+						if(cost_so_far.ContainsKey(neighbor)){
+							if(new_cost < cost_so_far[neighbor]){
+								cost_so_far[neighbor] = new_cost;
+							}
+						}else{
+							cost_so_far.Add(neighbor, new_cost);
 						}
-						came_from.Add(neighbor, current);//add the cell and where it came from
+
+						if(!frontier.Contains(neighbor)){
+		        			priority = new_cost + HeuristicDistance(end, neighbor);
+		         			frontier.Add(neighbor, priority);
+						}
+						if(!came_from.ContainsKey(neighbor)){
+	         				came_from.Add(neighbor, current);
+						}
 					}
 				}
 			}
@@ -461,12 +482,12 @@ public class GameController : MonoBehaviour
 
 //used by A* pathfinder
 public class PriorityQueue{
-	List<Vector3Int> cells = new List<Vector3Int>();
+	public List<Vector3Int> cells = new List<Vector3Int>();
 	List<int> cellPriority = new List<int>();
 
 	private int FindInsertIndex(int priority){
 		foreach(int p in cellPriority){
-			if(priority <= p){
+			if(priority < p){
 				return cellPriority.IndexOf(p);
 			}
 		}
@@ -491,6 +512,14 @@ public class PriorityQueue{
 		foreach(int p in cellPriority){
 			Console.WriteLine(p + ", " + cells[index++]);
 		}
+	}
+
+	public bool IsEmpty(){
+		return (cells.Count == 0);
+	}
+
+	public bool Contains(Vector3Int element){
+		return cells.Contains(element);
 	}
 }
 
