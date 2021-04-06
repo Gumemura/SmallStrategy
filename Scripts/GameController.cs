@@ -288,7 +288,7 @@ public class GameController : MonoBehaviour
 		int dx = Mathf.Abs(a.x - b.x);
 		int dy = Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));
 
-		return movementCost * (dx + dy) + (movementCost - 2 * movementCost) * Mathf.Min(dx, dy);
+		return movementCost * (dx + dy) + ((movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
 	}
 
 	//Pathfinder using Breadth First Search
@@ -316,7 +316,7 @@ public class GameController : MonoBehaviour
 
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
 				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
-					new_cost = cost_so_far[current] + movementCost;
+					new_cost = cost_so_far[current] + movementCost + diagonalCost;
 					if(!cost_so_far.ContainsKey(neighbor) || new_cost < cost_so_far[neighbor]){
 
 						if(cost_so_far.ContainsKey(neighbor)){
