@@ -316,7 +316,7 @@ public class GameController : MonoBehaviour
 
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
 				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
-					new_cost = cost_so_far[current] + movementCost + diagonalCost;
+					new_cost = cost_so_far[current] + movementCost;
 					if(!cost_so_far.ContainsKey(neighbor) || new_cost < cost_so_far[neighbor]){
 
 						if(cost_so_far.ContainsKey(neighbor)){
