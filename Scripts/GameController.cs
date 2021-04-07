@@ -288,7 +288,7 @@ public class GameController : MonoBehaviour
 		int dx = Mathf.Abs(a.x - b.x);
 		int dy = Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));
 
-		return movementCost * (dx + dy) + ((movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
+		return movementCost * (dx + dy) + ((1 + movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
 	}
 
 	//Pathfinder using Breadth First Search
@@ -304,7 +304,7 @@ public class GameController : MonoBehaviour
 
 		Vector3Int current;
 		List<Vector3Int> neighbors; 
-		int new_cost, priority;
+		int new_cost, priority, diagonalCost;
 
 		while(!frontier.IsEmpty()){
 			current = frontier.Pop();
@@ -316,7 +316,12 @@ public class GameController : MonoBehaviour
 
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
 				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
-					new_cost = cost_so_far[current] + movementCost;
+					if(current.x != neighbor.x && current.y != neighbor.y){
+						diagonalCost = 1;
+					}else{
+						diagonalCost = 0;
+					}
+					new_cost = cost_so_far[current] + movementCost + diagonalCost;
 					if(!cost_so_far.ContainsKey(neighbor) || new_cost < cost_so_far[neighbor]){
 
 						if(cost_so_far.ContainsKey(neighbor)){
@@ -431,8 +436,8 @@ public class GameController : MonoBehaviour
 
 		the variable 'rows' is the dimension of the array
 
-		the two 'ifs' below ('if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2))' and 'if(i + c > (speed - 1) + 2 * (i - speed) && i + c <= speed * 3)') restrict the selection to the 
-		cells og the diamong shape
+		the two 'ifs' below ('if(i + c > speed - 1 && i + c < (speed + 1) + (i * 2))' and 'if(i + c > (speed - 1) + 2 * (i - speed) && i + c <= speed * 3)') restrict the 
+		selection to the cells og the diamong shape
 		*/
 		List<Vector3Int> walkable = new List<Vector3Int>();
 		int speed = unit.GetComponent<ChampsBehaviour>().remainingSpeed;
@@ -455,11 +460,10 @@ public class GameController : MonoBehaviour
 		List<Vector3Int> allPaths = new List<Vector3Int>();
 		List<Vector3Int> toRemove = new List<Vector3Int>();
 
-		foreach(Vector3Int cell in walkable){
-			allPaths = pathFinder(floorTilemap, cell, unitPos, walkable);
-
-			if(MovementCostCalculation(allPaths) > speed || (MovementCostCalculation(allPaths) <= 0 && cell != unitPos)){
-				toRemove.Add(cell);
+		for (int i = 0; i < walkable.Count; i++){
+			allPaths = pathFinder(floorTilemap, walkable[i], unitPos, walkable);
+			if(MovementCostCalculation(allPaths) > speed || (MovementCostCalculation(allPaths) == 0 && walkable[i] != unitPos)){
+				toRemove.Add(walkable[i]);
 			}
 		}
 
@@ -468,15 +472,23 @@ public class GameController : MonoBehaviour
 		}
 
 		foreach(Vector3Int cell in walkable){
-			Vector3 convetedWalkArea = convertGidPosToWorldPos(cell);
-			Instantiate(walkableDots, convetedWalkArea, Quaternion.identity, walkableDotsParent);
+			Vector3 convertedWalkArea = convertGidPosToWorldPos(cell);
+			Instantiate(walkableDots, convertedWalkArea, Quaternion.identity, walkableDotsParent);
 		}
 
 		return walkable;
 	}
 
 	public int MovementCostCalculation(List<Vector3Int> path){
-		return path.Count - 1;
+		int pathCost = 0;
+		for(int i = 0; i < path.Count - 1; i++){
+			if(path[i].x != path[i + 1].x && path[i].y != path[i + 1].y){
+				pathCost += 2;
+			}else{
+				pathCost += 1;
+			}
+		}
+		return pathCost;
 	}
 }
 
