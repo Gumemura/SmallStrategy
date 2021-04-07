@@ -43,8 +43,8 @@ public class GameController : MonoBehaviour
 	private string champsTag = "Champ";
 	private string enemyTag = "Enemy";
 	private SpriteRenderer cursorSpriteRenderer;
-	private GameObject[] allHeroes;
-	private GameObject[] allEnemies;
+	private List<ChampsBehaviour> allHeroes = new List<ChampsBehaviour>();
+	private List<ChampsBehaviour> allEnemies = new List<ChampsBehaviour>();
 	private bool somethingIsSelected;
 	private RaycastHit2D hitBox;
 	private RaycastHit2D hitBoxWithUnitSelected;
@@ -70,8 +70,12 @@ public class GameController : MonoBehaviour
 		cursorSpriteRenderer = cursorObject.GetComponent<SpriteRenderer>();
 
 		//Filling the array with all controlable heros
-		allHeroes = GameObject.FindGameObjectsWithTag(champsTag);
-		allEnemies = GameObject.FindGameObjectsWithTag(enemyTag);
+		foreach(GameObject hero in GameObject.FindGameObjectsWithTag(champsTag)){
+			allHeroes.Add(hero.GetComponent<ChampsBehaviour>());
+		}
+		foreach(GameObject enemy in GameObject.FindGameObjectsWithTag(enemyTag)){
+			allEnemies.Add(enemy.GetComponent<ChampsBehaviour>());
+		}
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
@@ -105,8 +109,8 @@ public class GameController : MonoBehaviour
 			return false;
 		}
 
-		foreach(GameObject hero in allHeroes){
-			if(cell == hero.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid)){
+		foreach(ChampsBehaviour hero in allHeroes){
+			if(cell == hero.getPositionOnGrid(gameGrid)){
 				return false;
 			}
 		}
@@ -132,8 +136,8 @@ public class GameController : MonoBehaviour
 			actionCostText.text = "";
 
 			//Deselecting all heros
-			foreach(GameObject hero in allHeroes){
-				hero.transform.GetComponent<ChampsBehaviour>().turnOnSelection(false);
+			foreach(ChampsBehaviour hero in allHeroes){
+				hero.turnOnSelection(false);
 			}
 
 			//removing previous walkable area dots
@@ -212,52 +216,6 @@ public class GameController : MonoBehaviour
 		return gameGrid.CellToWorld(gridPosition) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
-	//removing edges corner to simulate diagonal movement
-	public void NormalizingPath(List<Vector3Int> path, Transform unit){
-		Vector3Int destinationCell;
-		Vector3Int analisedCell;
-
-		Vector3Int origin = path[0];
-
-		int speedCounter = 0;
-
-		int x;
-		int y;
-
-		for(int i = path.Count - 1; i > 0; i--){
-			if(i < path.Count){
-				destinationCell = path[i];
-
-				x = (int)Mathf.Sign(origin.x - destinationCell.x);
-				y = (int)Mathf.Sign(Mathf.Abs(destinationCell.y) - Mathf.Abs(origin.y));
-
-				if(floorTilemap.GetTile(destinationCell + new Vector3Int(x, 0, 0)) != null && floorTilemap.GetTile(destinationCell + new Vector3Int(0, y, 0)) != null){
-					analisedCell = destinationCell + new Vector3Int(x, y, 0);
-
-					while(!path.Contains(analisedCell)){
-						if(floorTilemap.GetTile(analisedCell) == null || (floorTilemap.GetTile(analisedCell + new Vector3Int(x, 0, 0)) == null && floorTilemap.GetTile(analisedCell + new Vector3Int(0, y, 0)) == null) ){
-							break;
-						}
-						analisedCell += new Vector3Int(x, y, 0);
-						speedCounter += movementCost;
-						if(speedCounter > unit.GetComponent<ChampsBehaviour>().remainingSpeed){
-							break;
-						}
-					}
-					if(path.Contains(analisedCell)){
-						path.RemoveRange(path.IndexOf(analisedCell) + 1, path.IndexOf(destinationCell) - path.IndexOf(analisedCell) - 1);
-					}
-					speedCounter = 0; 
-				}
-			}
-		}
-		for(int i = 0; i < path.Count - 2; i++){
-			if(Mathf.Abs(Mathf.Abs(path[i].x) - Mathf.Abs(path[i + 2].x)) == 1 && Mathf.Abs(Mathf.Abs(path[i].y) - Mathf.Abs(path[i + 2].y)) == 1){
-				path.Remove(path[i + 1]);
-			}
-		}
-	}
-
 	//Returns all neighbors
 	//Used by pathfinder
 	private List<Vector3Int> getNeighbors(Vector3Int home){
@@ -284,11 +242,19 @@ public class GameController : MonoBehaviour
 	}
 
 	private int HeuristicDistance(Vector3Int a, Vector3Int b){
-		//return Mathf.Abs(a.x - b.x) + Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));//the y axis is positivie bcz in tilemap y is decreasing
 		int dx = Mathf.Abs(a.x - b.x);
 		int dy = Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));
 
 		return movementCost * (dx + dy) + ((1 + movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
+	}
+
+	private bool ContainsEnemy(Vector3Int cell){
+		foreach(ChampsBehaviour enemy in allEnemies){
+			if(enemy.getPositionOnGrid(gameGrid) == cell){
+				return true;
+			}
+		}
+		return false;
 	}
 
 	//Pathfinder using Breadth First Search
@@ -315,7 +281,7 @@ public class GameController : MonoBehaviour
 			}
 
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
-				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor)){
+				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor) && !ContainsEnemy(neighbor)){
 					if(current.x != neighbor.x && current.y != neighbor.y){
 						diagonalCost = 1;
 					}else{
