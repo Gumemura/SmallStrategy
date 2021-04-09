@@ -57,6 +57,9 @@ public class GameController : MonoBehaviour
 	private List<Vector3Int> selectedUnitWalkableArea;
 	private LineRenderer lineRenderer;
 	private List<Vector3Int> pathToMove = new List<Vector3Int>();
+	private List<Vector3Int> tempPathToMove = new List<Vector3Int>();
+	private int plusActionCost;
+
 
 	void Start(){
 		//Reducing tilemap bounds to the place that contain tiles
@@ -91,15 +94,18 @@ public class GameController : MonoBehaviour
 		unitCanMove = true;
 
 		if(somethingIsSelected){
+			plusActionCost = 0;
 			if(hitBox.transform.tag == champsTag){
-				if(ValidClickedPosition(mousePositionConvertedToGrid) == false){
+				if(!ValidClickedPosition(mousePositionConvertedToGrid)){
 					cursorSpriteRenderer.sprite = xCursor;
 					unitCanMove = false;
 				}else if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 					if(hitBox.transform.GetComponent<ChampsBehaviour>().isAttackMelee){
 						cursorSpriteRenderer.sprite = meleeAttackCursor;
+						plusActionCost = 2;//REVIEW
 					}else{
 						cursorSpriteRenderer.sprite = rangedAttackCursor;
+						plusActionCost = 3;//REVIEW
 					}
 				}
 			}
@@ -123,7 +129,11 @@ public class GameController : MonoBehaviour
 	// Update is called once per frame
 	void Update(){
 		mousePosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition); //cursor position
-		mousePositionConvertedToGrid = gameGrid.WorldToCell(mousePosition);//coordinates of the cell that cursor in below (vector3int)
+		if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+			mousePositionConvertedToGrid = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+		}else{
+			mousePositionConvertedToGrid = gameGrid.WorldToCell(mousePosition);//coordinates of the cell that cursor in below (vector3int)
+		}
 		gridPosToWorld = convertGidPosToWorldPos(mousePositionConvertedToGrid);//converted coordinate of the frid position to world coords (vector3)
 
 		CursorState();
@@ -170,22 +180,28 @@ public class GameController : MonoBehaviour
 				hitBoxWithUnitSelected = Physics2D.Raycast(mousePosition, Vector2.zero);
 
 				//rendering path before user choses path and calculating path
-				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected ) && !unitIsMoving){
+				if((tempGridPosition != mousePositionConvertedToGrid) && !unitIsMoving){
+					pathToMove.Clear();
 					tempGridPosition = mousePositionConvertedToGrid;
 
 					if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 						tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-					}
-					pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
-
-					if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
-						pathToMove.RemoveAt(pathToMove.Count - 1);
+						if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
+							foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
+								tempPathToMove = PathFinder(selectecUnitPosition, cell);
+								if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
+									pathToMove = new List<Vector3Int>(tempPathToMove);
+								}
+							}
+						}
+					}else{
+						pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
 					}
 
 					int index = 0;
 					Vector3[] convertedPath = new Vector3[pathToMove.Count];
 
-					actionCostText.text = MovementCostCalculation(pathToMove).ToString();
+					actionCostText.text = (MovementCostCalculation(pathToMove) + plusActionCost).ToString();
 					if(MovementCostCalculation(pathToMove) > hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
 						actionCostText.color = Color.red;
 					}else{
@@ -268,6 +284,9 @@ public class GameController : MonoBehaviour
 
 	//Pathfinder using A*
 	public List<Vector3Int> PathFinder(Vector3Int start, Vector3Int end){
+		if(ContainsEnemy(end)){
+			return new List<Vector3Int>() {};
+		}
 
 		PriorityQueue frontier = new PriorityQueue();
 		frontier.Add(start, 0);
@@ -287,7 +306,6 @@ public class GameController : MonoBehaviour
 			neighbors = getNeighbors(current);//getting all 8 neighbors
 
 			if(current == end){//if the current cell is the destination, break bcz we found the path we were looking for
-				frontier.Print();
 				break;
 			}
 
