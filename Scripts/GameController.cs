@@ -75,9 +75,11 @@ public class GameController : MonoBehaviour
 		//Filling the array with all controlable heros
 		foreach(GameObject hero in GameObject.FindGameObjectsWithTag(champsTag)){
 			allHeroes.Add(hero.GetComponent<ChampsBehaviour>());
+			ZCalculation(hero.GetComponent<ChampsBehaviour>());
 		}
 		foreach(GameObject enemy in GameObject.FindGameObjectsWithTag(enemyTag)){
 			allEnemies.Add(enemy.GetComponent<ChampsBehaviour>());
+			ZCalculation(enemy.GetComponent<ChampsBehaviour>());
 		}
 
 		somethingIsSelected = false;
@@ -94,7 +96,6 @@ public class GameController : MonoBehaviour
 		unitCanMove = true;
 
 		if(somethingIsSelected){
-			plusActionCost = 0;
 			if(hitBox.transform.tag == champsTag){
 				if(!ValidClickedPosition(mousePositionConvertedToGrid)){
 					cursorSpriteRenderer.sprite = xCursor;
@@ -102,10 +103,8 @@ public class GameController : MonoBehaviour
 				}else if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 					if(hitBox.transform.GetComponent<ChampsBehaviour>().isAttackMelee){
 						cursorSpriteRenderer.sprite = meleeAttackCursor;
-						plusActionCost = 2;//REVIEW
 					}else{
 						cursorSpriteRenderer.sprite = rangedAttackCursor;
-						plusActionCost = 3;//REVIEW
 					}
 				}
 			}
@@ -185,6 +184,8 @@ public class GameController : MonoBehaviour
 					tempGridPosition = mousePositionConvertedToGrid;
 
 					if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+						plusActionCost = 2;
+						
 						tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 						if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
 							foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
@@ -223,6 +224,7 @@ public class GameController : MonoBehaviour
 					lineRenderer.positionCount = 0;
 					actionCostText.text = "";
 				}
+				plusActionCost = 0;
 			}
 
 			if(Input.GetMouseButtonDown(1)){
@@ -371,6 +373,7 @@ public class GameController : MonoBehaviour
 
 			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
 				unit.position = Vector3.MoveTowards(unit.position, convertedDestination, Time.deltaTime * movementVelocity);
+
 				yield return null;
 			}
 		}
@@ -390,6 +393,8 @@ public class GameController : MonoBehaviour
 		if(somethingIsSelected){
 			selectedUnitWalkableArea = walkableArea(unit.transform);
 		}
+		
+		ZCalculation(unit.GetComponent<ChampsBehaviour>());
 	}
 
 	//Calculaing walkable area
@@ -474,6 +479,10 @@ public class GameController : MonoBehaviour
 			}
 		}
 		return pathCost;
+	}
+
+	public void ZCalculation(ChampsBehaviour unit){
+		unit.transform.position = new Vector3(unit.transform.position.x, unit.transform.position.y, unit.transform.position.y * .01f);
 	}
 }
 
