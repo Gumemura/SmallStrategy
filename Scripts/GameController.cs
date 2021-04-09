@@ -79,6 +79,8 @@ public class GameController : MonoBehaviour
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
+
+		PathFinder(new Vector3Int(0,0,0), new Vector3Int(5,-5,0));
 	}
 
 	//Upfating the cursor state
@@ -170,13 +172,14 @@ public class GameController : MonoBehaviour
 				//rendering path before user choses path and calculating path
 				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected ) && !unitIsMoving){
 					tempGridPosition = mousePositionConvertedToGrid;
-					if(selectedUnitWalkableArea.Contains(tempGridPosition) && unitIsMoving == false){
+					if(selectedUnitWalkableArea.Contains(tempGridPosition)){
 						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 						}
-						pathToMove = pathFinder(floorTilemap, selectecUnitPosition, tempGridPosition, selectedUnitWalkableArea);
+						pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
 
 						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+							print(pathToMove.Count);
 							pathToMove.RemoveAt(pathToMove.Count - 1);
 						}
 
@@ -204,7 +207,7 @@ public class GameController : MonoBehaviour
 				if(hitBox.transform.tag == champsTag){
 					//Movement of unit
 					if(unitIsMoving == false && unitCanMove && selectedUnitWalkableArea.Contains(mousePositionConvertedToGrid)){
-						StartCoroutine(moveUnit(hitBox.transform, pathToMove)); //Moving
+						StartCoroutine(MoveUnit(hitBox.transform, pathToMove)); //Moving
 					}
 				}
 			}	
@@ -222,30 +225,30 @@ public class GameController : MonoBehaviour
 		List<Vector3Int> neighbors = new List<Vector3Int>();
 
 		if(floorTilemap.GetTile(home + Vector3Int.up) != null){neighbors.Add(home + Vector3Int.up);}
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.right);
+		}
 		if(floorTilemap.GetTile(home + Vector3Int.right) != null){neighbors.Add(home + Vector3Int.right);}
-		if(floorTilemap.GetTile(home + Vector3Int.left) != null){neighbors.Add(home + Vector3Int.left);}
-		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
-		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
-			neighbors.Add(home + Vector3Int.up + Vector3Int.left);
-		}
-		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
-			neighbors.Add(home + Vector3Int.down + Vector3Int.left);
-		}
 		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
 			neighbors.Add(home + Vector3Int.down + Vector3Int.right);
 		}
-		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.right) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.right) != null)){
-			neighbors.Add(home + Vector3Int.up + Vector3Int.right);
+		if(floorTilemap.GetTile(home + Vector3Int.down) != null){neighbors.Add(home + Vector3Int.down);}
+		if(floorTilemap.GetTile(home + Vector3Int.down + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.down) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.down + Vector3Int.left);
+		}
+		if(floorTilemap.GetTile(home + Vector3Int.left) != null){neighbors.Add(home + Vector3Int.left);}
+		if(floorTilemap.GetTile(home + Vector3Int.up + Vector3Int.left) != null && (floorTilemap.GetTile(home + Vector3Int.up) != null || floorTilemap.GetTile(home + Vector3Int.left) != null)){
+			neighbors.Add(home + Vector3Int.up + Vector3Int.left);
 		}
 
 		return neighbors;
 	}
 
-	private int HeuristicDistance(Vector3Int a, Vector3Int b){
+	private float HeuristicDistance(Vector3Int a, Vector3Int b){
 		int dx = Mathf.Abs(a.x - b.x);
 		int dy = Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));
 
-		return movementCost * (dx + dy) + ((1 + movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
+		return movementCost * (dx + dy) + ((.2f + movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
 	}
 
 	private bool ContainsEnemy(Vector3Int cell){
@@ -257,54 +260,46 @@ public class GameController : MonoBehaviour
 		return false;
 	}
 
-	//Pathfinder using Breadth First Search
-	public List<Vector3Int> pathFinder(Tilemap tilemap, Vector3Int start, Vector3Int end, List<Vector3Int> walkableArea){
+	//Pathfinder using A*
+	public List<Vector3Int> PathFinder(Vector3Int start, Vector3Int end){
+
 		PriorityQueue frontier = new PriorityQueue();
 		frontier.Add(start, 0);
 
 		Dictionary<Vector3Int, Vector3Int> came_from = new Dictionary<Vector3Int, Vector3Int>();
 		came_from.Add(start, default(Vector3Int));//dicitionary where will be stored a cell coords and from which cell it came from
 
-		Dictionary<Vector3Int, int> cost_so_far = new Dictionary<Vector3Int, int>();
+		Dictionary<Vector3Int, float> cost_so_far = new Dictionary<Vector3Int, float>();
 		cost_so_far.Add(start, 0);
 
 		Vector3Int current;
 		List<Vector3Int> neighbors; 
-		int new_cost, priority, diagonalCost;
+		float new_cost, priority, diagonalCost;
 
 		while(!frontier.IsEmpty()){
 			current = frontier.Pop();
 			neighbors = getNeighbors(current);//getting all 8 neighbors
 
 			if(current == end){//if the current cell is the destination, break bcz we found the path we were looking for
+				frontier.Print();
 				break;
 			}
 
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
-				if(tilemap.GetTile(neighbor) != null && walkableArea.Contains(neighbor) && !ContainsEnemy(neighbor)){
+				if(floorTilemap.GetTile(neighbor) != null && !ContainsEnemy(neighbor)){
 					if(current.x != neighbor.x && current.y != neighbor.y){
-						diagonalCost = 1;
+						diagonalCost = .2f;
 					}else{
 						diagonalCost = 0;
 					}
 					new_cost = cost_so_far[current] + movementCost + diagonalCost;
-					if(!cost_so_far.ContainsKey(neighbor) || new_cost < cost_so_far[neighbor]){
-
-						if(cost_so_far.ContainsKey(neighbor)){
-							if(new_cost < cost_so_far[neighbor]){
-								cost_so_far[neighbor] = new_cost;
-							}
-						}else{
-							cost_so_far.Add(neighbor, new_cost);
-						}
-
-						if(!frontier.Contains(neighbor)){
-		        			priority = new_cost + HeuristicDistance(end, neighbor);
-		         			frontier.Add(neighbor, priority);
-						}
-						if(!came_from.ContainsKey(neighbor)){
-	         				came_from.Add(neighbor, current);
-						}
+					if(cost_so_far.ContainsKey(neighbor) && new_cost < cost_so_far[neighbor]){
+						cost_so_far[neighbor] = new_cost;
+					}else if(!cost_so_far.ContainsKey(neighbor)){
+						priority = new_cost + HeuristicDistance(end, neighbor);
+						frontier.Add(neighbor, priority);
+						cost_so_far.Add(neighbor, new_cost);
+						came_from.Add(neighbor, current);
 					}
 				}
 			}
@@ -337,7 +332,7 @@ public class GameController : MonoBehaviour
 	}
 
 	//Moving the unit
-	IEnumerator moveUnit(Transform unit, List<Vector3Int> path){
+	IEnumerator MoveUnit(Transform unit, List<Vector3Int> path){
 		//destroying all walkable area dots
 		foreach (Transform blueDot in walkableDotsParent) {
 			GameObject.Destroy(blueDot.gameObject);
@@ -427,7 +422,7 @@ public class GameController : MonoBehaviour
 		List<Vector3Int> toRemove = new List<Vector3Int>();
 
 		for (int i = 0; i < walkable.Count; i++){
-			allPaths = pathFinder(floorTilemap, walkable[i], unitPos, walkable);
+			allPaths = PathFinder(walkable[i], unitPos);
 			if(MovementCostCalculation(allPaths) > speed || (MovementCostCalculation(allPaths) == 0 && walkable[i] != unitPos)){
 				toRemove.Add(walkable[i]);
 			}
@@ -460,11 +455,11 @@ public class GameController : MonoBehaviour
 
 //used by A* pathfinder
 public class PriorityQueue{
-	public List<Vector3Int> cells = new List<Vector3Int>();
-	List<int> cellPriority = new List<int>();
+	List<Vector3Int> cells = new List<Vector3Int>();
+	List<float> cellPriority = new List<float>();
 
-	private int FindInsertIndex(int priority){
-		foreach(int p in cellPriority){
+	private int FindInsertIndex(float priority){
+		foreach(float p in cellPriority){
 			if(priority < p){
 				return cellPriority.IndexOf(p);
 			}
@@ -472,7 +467,7 @@ public class PriorityQueue{
 		return cellPriority.Count;
 	}
 
-	public void Add(Vector3Int cell, int priority){
+	public void Add(Vector3Int cell, float priority){
 		int index = FindInsertIndex(priority);
 		cells.Insert(index, cell);
 		cellPriority.Insert(index, priority);
