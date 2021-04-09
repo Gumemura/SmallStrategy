@@ -367,13 +367,13 @@ public class GameController : MonoBehaviour
 		unitIsMoving = true;
 		unit.transform.GetComponent<Animator>().SetBool("isMoving", true);
 		foreach(Vector3Int breadCrumb in path){
-			Vector3 convertedDestination = convertGidPosToWorldPos(breadCrumb);
+			Vector2 convertedDestination = (Vector2)convertGidPosToWorldPos(breadCrumb);
 
 			FlipUnit(unit, convertedDestination);
 
-			while(Vector3.Distance(unit.transform.position, convertedDestination) > unitTileOffset){ 
-				unit.position = Vector3.MoveTowards(unit.position, convertedDestination, Time.deltaTime * movementVelocity);
-
+			while(Vector2.Distance((Vector2)unit.transform.position, convertedDestination) > unitTileOffset){ 
+				unit.position = Vector2.MoveTowards((Vector2)unit.position, convertedDestination, Time.deltaTime * movementVelocity);
+				ZCalculation(unit.GetComponent<ChampsBehaviour>());
 				yield return null;
 			}
 		}
@@ -393,7 +393,7 @@ public class GameController : MonoBehaviour
 		if(somethingIsSelected){
 			selectedUnitWalkableArea = walkableArea(unit.transform);
 		}
-		
+
 		ZCalculation(unit.GetComponent<ChampsBehaviour>());
 	}
 
