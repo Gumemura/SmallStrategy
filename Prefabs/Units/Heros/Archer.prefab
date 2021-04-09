@@ -128,8 +128,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 190d7369b78fc44438bc1e958c09760b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 7
+  speed: 8
+  hp: 0
   remainingSpeed: 0
+  remainingHP: 0
+  isAttackMelee: 1
 --- !u!212 &494582652686935985
 SpriteRenderer:
   m_ObjectHideFlags: 0
