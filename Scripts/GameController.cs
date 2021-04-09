@@ -244,11 +244,11 @@ public class GameController : MonoBehaviour
 		return neighbors;
 	}
 
-	private float HeuristicDistance(Vector3Int a, Vector3Int b){
+	private int HeuristicDistance(Vector3Int a, Vector3Int b){
 		int dx = Mathf.Abs(a.x - b.x);
 		int dy = Mathf.Abs(Mathf.Abs(a.y) - Mathf.Abs(b.y));
 
-		return movementCost * (dx + dy) + ((.2f + movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
+		return movementCost * (dx + dy) + ((0 + movementCost) - 2 * movementCost) * Mathf.Min(dx, dy);
 	}
 
 	private bool ContainsEnemy(Vector3Int cell){
@@ -269,12 +269,12 @@ public class GameController : MonoBehaviour
 		Dictionary<Vector3Int, Vector3Int> came_from = new Dictionary<Vector3Int, Vector3Int>();
 		came_from.Add(start, default(Vector3Int));//dicitionary where will be stored a cell coords and from which cell it came from
 
-		Dictionary<Vector3Int, float> cost_so_far = new Dictionary<Vector3Int, float>();
+		Dictionary<Vector3Int, int> cost_so_far = new Dictionary<Vector3Int, int>();
 		cost_so_far.Add(start, 0);
 
 		Vector3Int current;
 		List<Vector3Int> neighbors; 
-		float new_cost, priority, diagonalCost;
+		int new_cost, priority, diagonalCost;
 
 		while(!frontier.IsEmpty()){
 			current = frontier.Pop();
@@ -288,7 +288,7 @@ public class GameController : MonoBehaviour
 			foreach(Vector3Int neighbor in neighbors){//checking each neighbor
 				if(floorTilemap.GetTile(neighbor) != null && !ContainsEnemy(neighbor)){
 					if(current.x != neighbor.x && current.y != neighbor.y){
-						diagonalCost = .2f;
+						diagonalCost = 1;
 					}else{
 						diagonalCost = 0;
 					}
@@ -456,10 +456,10 @@ public class GameController : MonoBehaviour
 //used by A* pathfinder
 public class PriorityQueue{
 	List<Vector3Int> cells = new List<Vector3Int>();
-	List<float> cellPriority = new List<float>();
+	List<int> cellPriority = new List<int>();
 
-	private int FindInsertIndex(float priority){
-		foreach(float p in cellPriority){
+	private int FindInsertIndex(int priority){
+		foreach(int p in cellPriority){
 			if(priority < p){
 				return cellPriority.IndexOf(p);
 			}
@@ -467,7 +467,7 @@ public class PriorityQueue{
 		return cellPriority.Count;
 	}
 
-	public void Add(Vector3Int cell, float priority){
+	public void Add(Vector3Int cell, int priority){
 		int index = FindInsertIndex(priority);
 		cells.Insert(index, cell);
 		cellPriority.Insert(index, priority);
