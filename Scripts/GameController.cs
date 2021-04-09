@@ -172,32 +172,38 @@ public class GameController : MonoBehaviour
 				//rendering path before user choses path and calculating path
 				if((tempGridPosition != mousePositionConvertedToGrid || hitBoxWithUnitSelected ) && !unitIsMoving){
 					tempGridPosition = mousePositionConvertedToGrid;
-					if(selectedUnitWalkableArea.Contains(tempGridPosition)){
-						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
-							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-						}
-						pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
 
-						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
-							print(pathToMove.Count);
-							pathToMove.RemoveAt(pathToMove.Count - 1);
-						}
-
-						int index = 0;
-						Vector3 convertedGridPosition;
-						Vector3[] convertedPath = new Vector3[pathToMove.Count];
-
-						actionCostText.text = MovementCostCalculation(pathToMove).ToString();
-						//NormalizingPath(pathToMove, hitBox.transform);
-
-						foreach(Vector3Int cell in pathToMove){
-							convertedGridPosition = convertGidPosToWorldPos(cell);
-							convertedPath[index++] = convertedGridPosition;
-						}
-						lineRenderer.positionCount = index;
-						lineRenderer.SetPositions(convertedPath);
+					if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+						tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 					}
-				}else if(!selectedUnitWalkableArea.Contains(mousePositionConvertedToGrid) || unitIsMoving){
+					pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
+
+					if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+						pathToMove.RemoveAt(pathToMove.Count - 1);
+					}
+
+					int index = 0;
+					Vector3[] convertedPath = new Vector3[pathToMove.Count];
+
+					actionCostText.text = MovementCostCalculation(pathToMove).ToString();
+					if(MovementCostCalculation(pathToMove) > hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
+						actionCostText.color = Color.red;
+					}else{
+						actionCostText.color = Color.white;
+					}
+
+					foreach(Vector3Int cell in pathToMove){
+						if(selectedUnitWalkableArea.Contains(cell)){
+							convertedPath[index++] = convertGidPosToWorldPos(cell);
+						}else{
+							pathToMove.RemoveRange(index, pathToMove.Count - index);
+							break;
+						}
+					}
+
+					lineRenderer.positionCount = index;
+					lineRenderer.SetPositions(convertedPath);
+				}else if(unitIsMoving){
 					lineRenderer.positionCount = 0;
 					actionCostText.text = "";
 				}
@@ -206,7 +212,7 @@ public class GameController : MonoBehaviour
 			if(Input.GetMouseButtonDown(1)){
 				if(hitBox.transform.tag == champsTag){
 					//Movement of unit
-					if(unitIsMoving == false && unitCanMove && selectedUnitWalkableArea.Contains(mousePositionConvertedToGrid)){
+					if(unitIsMoving == false && unitCanMove && pathToMove.Count > 0){
 						StartCoroutine(MoveUnit(hitBox.transform, pathToMove)); //Moving
 					}
 				}
