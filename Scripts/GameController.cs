@@ -35,6 +35,7 @@ public class GameController : MonoBehaviour
 	public float movementVelocity;
 	public int movementCost;
 	[HideInInspector]public bool unitIsMoving;
+	[HideInInspector]public PriorityQueue iniciativeOrder;
 
 	[Header("UI")]
 	public Transform walkableDots;
@@ -203,7 +204,7 @@ public class GameController : MonoBehaviour
 					Vector3[] convertedPath = new Vector3[pathToMove.Count];
 
 					actionCostText.text = (MovementCostCalculation(pathToMove) + plusActionCost).ToString();
-					if(MovementCostCalculation(pathToMove) > hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
+					if(MovementCostCalculation(pathToMove) + plusActionCost> hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
 						actionCostText.color = Color.red;
 					}else{
 						actionCostText.color = Color.white;

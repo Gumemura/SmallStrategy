@@ -7,6 +7,8 @@ public class ChampsBehaviour: MonoBehaviour
 {
 	public int speed;
 	public int hp;
+	public int maxIniciative;
+	public int iniciative;
 
 	public Item equipedItem;
 	public Item[] invetory;
@@ -30,6 +32,11 @@ public class ChampsBehaviour: MonoBehaviour
 
 	public void EquipItem(Item item){
 		equipedItem = item;
+	}
+
+	public int SetIniciative(){
+		iniciative = Random.Range(1, maxIniciative);
+		return iniciative;
 	}
 }
 
