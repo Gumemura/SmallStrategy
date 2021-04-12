@@ -35,7 +35,7 @@ public class GameController : MonoBehaviour
 	public float movementVelocity;
 	public int movementCost;
 	[HideInInspector]public bool unitIsMoving;
-	[HideInInspector]public PriorityQueue iniciativeOrder;
+	[HideInInspector]public PriorityQueue<ChampsBehaviour> iniciativeOrder = new PriorityQueue<ChampsBehaviour>();
 
 	[Header("UI")]
 	public Transform walkableDots;
@@ -74,20 +74,36 @@ public class GameController : MonoBehaviour
 		cursorSpriteRenderer = cursorObject.GetComponent<SpriteRenderer>();
 
 		//Filling the array with all controlable heros
+		ChampsBehaviour unitChampBeh;
 		foreach(GameObject hero in GameObject.FindGameObjectsWithTag(champsTag)){
-			allHeroes.Add(hero.GetComponent<ChampsBehaviour>());
-			ZCalculation(hero.GetComponent<ChampsBehaviour>());
+			unitChampBeh = hero.GetComponent<ChampsBehaviour>();
+			allHeroes.Add(unitChampBeh);
+			ZCalculation(unitChampBeh);
+			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
 		}
 		foreach(GameObject enemy in GameObject.FindGameObjectsWithTag(enemyTag)){
-			allEnemies.Add(enemy.GetComponent<ChampsBehaviour>());
-			ZCalculation(enemy.GetComponent<ChampsBehaviour>());
+			unitChampBeh = enemy.GetComponent<ChampsBehaviour>();
+			allEnemies.Add(unitChampBeh);
+			ZCalculation(unitChampBeh);
+			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
 		}
+		StartCoroutine(IniciativeDisplay());
+		print("a");
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
-
-		PathFinder(new Vector3Int(0,0,0), new Vector3Int(5,-5,0));
 	}
+
+	IEnumerator IniciativeDisplay(){
+		print(Time.time);
+		yield return new WaitForSeconds(2);
+
+		print(Time.time);
+		yield return new WaitForSeconds(2);
+
+		print(Time.time);
+		yield return new WaitForSeconds(2);
+	}	
 
 	//Upfating the cursor state
 	void CursorState(){
@@ -181,6 +197,7 @@ public class GameController : MonoBehaviour
 
 				//rendering path before user choses path and calculating path
 				if((tempGridPosition != mousePositionConvertedToGrid) && !unitIsMoving){
+					plusActionCost = 0;
 					pathToMove.Clear();
 					tempGridPosition = mousePositionConvertedToGrid;
 
@@ -225,14 +242,13 @@ public class GameController : MonoBehaviour
 					lineRenderer.positionCount = 0;
 					actionCostText.text = "";
 				}
-				plusActionCost = 0;
 			}
 
 			if(Input.GetMouseButtonDown(1)){
 				if(hitBox.transform.tag == champsTag){
 					//Movement of unit
 					if(unitIsMoving == false && unitCanMove && pathToMove.Count > 0){
-						StartCoroutine(MoveUnit(hitBox.transform, pathToMove)); //Moving
+						StartCoroutine(MoveUnit(hitBox.transform, pathToMove, plusActionCost)); //Moving
 					}
 				}
 			}	
@@ -291,7 +307,7 @@ public class GameController : MonoBehaviour
 			return new List<Vector3Int>() {};
 		}
 
-		PriorityQueue frontier = new PriorityQueue();
+		PriorityQueue<Vector3Int> frontier = new PriorityQueue<Vector3Int>();
 		frontier.Add(start, 0);
 
 		Dictionary<Vector3Int, Vector3Int> came_from = new Dictionary<Vector3Int, Vector3Int>();
@@ -359,7 +375,7 @@ public class GameController : MonoBehaviour
 	}
 
 	//Moving the unit
-	IEnumerator MoveUnit(Transform unit, List<Vector3Int> path){
+	IEnumerator MoveUnit(Transform unit, List<Vector3Int> path, int plusCost){
 		//destroying all walkable area dots
 		foreach (Transform blueDot in walkableDotsParent) {
 			GameObject.Destroy(blueDot.gameObject);
@@ -387,7 +403,7 @@ public class GameController : MonoBehaviour
 
 		//calculating remaining speed
 		if(reduceSpeed){
-			unit.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= MovementCostCalculation(path);
+			unit.transform.GetComponent<ChampsBehaviour>().remainingSpeed -= (MovementCostCalculation(path) + plusCost);
 		}
 
 		//rendering the new walkable area and calculating new one
@@ -488,9 +504,9 @@ public class GameController : MonoBehaviour
 }
 
 //used by A* pathfinder
-public class PriorityQueue{
-	List<Vector3Int> cells = new List<Vector3Int>();
-	List<int> cellPriority = new List<int>();
+public class PriorityQueue<T>{
+	public List<T> cells = new List<T>();
+	public List<int> cellPriority = new List<int>();
 
 	private int FindInsertIndex(int priority){
 		foreach(int p in cellPriority){
@@ -501,14 +517,14 @@ public class PriorityQueue{
 		return cellPriority.Count;
 	}
 
-	public void Add(Vector3Int cell, int priority){
+	public void Add(T cell, int priority){
 		int index = FindInsertIndex(priority);
 		cells.Insert(index, cell);
 		cellPriority.Insert(index, priority);
 	}
 
-	public Vector3Int Pop(){
-		Vector3Int cell = cells[0];
+	public T Pop(){
+		T cell = cells[0];
 		cells.RemoveAt(0);
 		cellPriority.RemoveAt(0);
 		return cell;
@@ -517,7 +533,7 @@ public class PriorityQueue{
 	public void Print(){
 		int index = 0;
 		foreach(int p in cellPriority){
-			Console.WriteLine(p + ", " + cells[index++]);
+			Debug.Log(p + ", " + cells[index++]);
 		}
 	}
 
@@ -525,8 +541,7 @@ public class PriorityQueue{
 		return (cells.Count == 0);
 	}
 
-	public bool Contains(Vector3Int element){
+	public bool Contains(T element){
 		return cells.Contains(element);
 	}
 }
-

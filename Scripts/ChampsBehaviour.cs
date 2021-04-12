@@ -8,7 +8,7 @@ public class ChampsBehaviour: MonoBehaviour
 	public int speed;
 	public int hp;
 	public int maxIniciative;
-	public int iniciative;
+	[HideInInspector]public int iniciative;
 
 	public Item equipedItem;
 	public Item[] invetory;
