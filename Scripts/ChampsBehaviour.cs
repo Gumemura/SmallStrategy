@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using TMPro;
 
 public class ChampsBehaviour: MonoBehaviour
 {
@@ -17,8 +18,11 @@ public class ChampsBehaviour: MonoBehaviour
 	[HideInInspector]public int remainingHP;
 	public bool isAttackMelee;
 
+	private TextMeshProUGUI unitText;
+
 	void Start(){
 		remainingSpeed = speed;
+		unitText = transform.Find("UnitCanvas").Find("UnitText").GetComponent<TextMeshProUGUI>();
 	}
 
 	public void turnOnSelection(bool active){
@@ -37,6 +41,13 @@ public class ChampsBehaviour: MonoBehaviour
 	public int SetIniciative(){
 		iniciative = Random.Range(1, maxIniciative);
 		return iniciative;
+	}
+
+	public IEnumerator Displaytext(string text, int secondsTime, Color textColor){
+		unitText.text = text;
+		unitText.color = textColor;
+		yield return new WaitForSeconds(secondsTime);
+		unitText.text = "";
 	}
 }
 

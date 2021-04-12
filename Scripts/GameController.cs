@@ -80,30 +80,20 @@ public class GameController : MonoBehaviour
 			allHeroes.Add(unitChampBeh);
 			ZCalculation(unitChampBeh);
 			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
+			StartCoroutine(unitChampBeh.Displaytext((unitChampBeh.iniciative).ToString(), 3, Color.white));
 		}
 		foreach(GameObject enemy in GameObject.FindGameObjectsWithTag(enemyTag)){
 			unitChampBeh = enemy.GetComponent<ChampsBehaviour>();
 			allEnemies.Add(unitChampBeh);
 			ZCalculation(unitChampBeh);
 			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
+
+			StartCoroutine(unitChampBeh.Displaytext((unitChampBeh.iniciative).ToString(), 3, Color.white));
 		}
-		StartCoroutine(IniciativeDisplay());
-		print("a");
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
 	}
-
-	IEnumerator IniciativeDisplay(){
-		print(Time.time);
-		yield return new WaitForSeconds(2);
-
-		print(Time.time);
-		yield return new WaitForSeconds(2);
-
-		print(Time.time);
-		yield return new WaitForSeconds(2);
-	}	
 
 	//Upfating the cursor state
 	void CursorState(){
