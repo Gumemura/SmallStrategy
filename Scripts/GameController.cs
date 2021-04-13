@@ -40,12 +40,16 @@ public class GameController : MonoBehaviour
 	[Header("UI")]
 	public Transform walkableDots;
 	public Transform walkableDotsParent;
+	public TextMeshProUGUI phaseAnouncement;
+
 
 	private string champsTag = "Champ";
 	private string enemyTag = "Enemy";
 	private SpriteRenderer cursorSpriteRenderer;
 	private List<ChampsBehaviour> allHeroes = new List<ChampsBehaviour>();
 	private List<ChampsBehaviour> allEnemies = new List<ChampsBehaviour>();
+	private List<ChampsBehaviour> allUnitsInGame = new List<ChampsBehaviour>();
+
 	private bool somethingIsSelected;
 	private RaycastHit2D hitBox;
 	private RaycastHit2D hitBoxWithUnitSelected;
@@ -60,7 +64,7 @@ public class GameController : MonoBehaviour
 	private List<Vector3Int> pathToMove = new List<Vector3Int>();
 	private List<Vector3Int> tempPathToMove = new List<Vector3Int>();
 	private int plusActionCost;
-
+	private bool canPlayTheGame = false;
 
 	void Start(){
 		//Reducing tilemap bounds to the place that contain tiles
@@ -73,26 +77,42 @@ public class GameController : MonoBehaviour
 		cursorObject = transform.Find("Cursor");
 		cursorSpriteRenderer = cursorObject.GetComponent<SpriteRenderer>();
 
+		phaseAnouncement = transform.Find("GCCanvas").Find("PhaseAnouncement").GetComponent<TextMeshProUGUI>();
+
 		//Filling the array with all controlable heros
 		ChampsBehaviour unitChampBeh;
 		foreach(GameObject hero in GameObject.FindGameObjectsWithTag(champsTag)){
 			unitChampBeh = hero.GetComponent<ChampsBehaviour>();
 			allHeroes.Add(unitChampBeh);
+			allUnitsInGame.Add(unitChampBeh);
 			ZCalculation(unitChampBeh);
 			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
-			StartCoroutine(unitChampBeh.Displaytext((unitChampBeh.iniciative).ToString(), 3, Color.white));
 		}
 		foreach(GameObject enemy in GameObject.FindGameObjectsWithTag(enemyTag)){
 			unitChampBeh = enemy.GetComponent<ChampsBehaviour>();
 			allEnemies.Add(unitChampBeh);
+			allUnitsInGame.Add(unitChampBeh);
 			ZCalculation(unitChampBeh);
 			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
-
-			StartCoroutine(unitChampBeh.Displaytext((unitChampBeh.iniciative).ToString(), 3, Color.white));
 		}
+
+		StartCoroutine(RollingIniciative());
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
+	}
+
+	IEnumerator RollingIniciative(){
+		phaseAnouncement.text = "Rolling iniciative";
+		yield return new WaitForSeconds(3);
+		phaseAnouncement.text = "";
+		foreach (ChampsBehaviour unit in allUnitsInGame){
+			StartCoroutine(unit.Displaytext((unit.iniciative).ToString(), 3, Color.white));
+		}
+		yield return new WaitForSeconds(2);
+
+		//Now the user can start playing
+		canPlayTheGame = true;
 	}
 
 	//Upfating the cursor state
@@ -135,6 +155,7 @@ public class GameController : MonoBehaviour
 	// Update is called once per frame
 	void Update(){
 		mousePosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition); //cursor position
+
 		if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
 			mousePositionConvertedToGrid = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 		}else{
@@ -149,99 +170,101 @@ public class GameController : MonoBehaviour
 			vector3CoordsDisplay.text = gridPosToWorld.x + " " + gridPosToWorld.y;
 		}
 
-		if(Input.GetMouseButtonDown(0)){
-			hitBox = Physics2D.Raycast(mousePosition, Vector2.zero);//The object that have been hit
-			actionCostText.text = "";
+		if(canPlayTheGame){
+			if(Input.GetMouseButtonDown(0)){
+				hitBox = Physics2D.Raycast(mousePosition, Vector2.zero);//The object that have been hit
+				actionCostText.text = "";
 
-			//Deselecting all heros
-			foreach(ChampsBehaviour hero in allHeroes){
-				hero.turnOnSelection(false);
-			}
-
-			//removing previous walkable area dots
-			foreach (Transform blueDot in walkableDotsParent) {
-				GameObject.Destroy(blueDot.gameObject);
-			}
-
-			//turning off the steps line
-			lineRenderer.positionCount = 0;
-			
-			if (hitBox.collider != null) {
-				if(unitIsMoving == false ){
-					somethingIsSelected = true;
-					if(hitBox.transform.tag == champsTag){
-						hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
-
-						selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-						selectedUnitWalkableArea = walkableArea(hitBox.transform);
-					}
+				//Deselecting all heros
+				foreach(ChampsBehaviour hero in allHeroes){
+					hero.turnOnSelection(false);
 				}
-			}else{
-				somethingIsSelected = false;
+
+				//removing previous walkable area dots
+				foreach (Transform blueDot in walkableDotsParent) {
+					GameObject.Destroy(blueDot.gameObject);
+				}
+
+				//turning off the steps line
+				lineRenderer.positionCount = 0;
+				
+				if (hitBox.collider != null) {
+					if(unitIsMoving == false ){
+						somethingIsSelected = true;
+						if(hitBox.transform.tag == champsTag){
+							hitBox.transform.GetComponent<ChampsBehaviour>().turnOnSelection(true);
+
+							selectecUnitPosition = hitBox.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+							selectedUnitWalkableArea = walkableArea(hitBox.transform);
+						}
+					}
+				}else{
+					somethingIsSelected = false;
+				}
 			}
-		}
 
-		if(somethingIsSelected){
-			if(hitBox.transform.tag == champsTag){
-				hitBoxWithUnitSelected = Physics2D.Raycast(mousePosition, Vector2.zero);
+			if(somethingIsSelected){
+				if(hitBox.transform.tag == champsTag){
+					hitBoxWithUnitSelected = Physics2D.Raycast(mousePosition, Vector2.zero);
 
-				//rendering path before user choses path and calculating path
-				if((tempGridPosition != mousePositionConvertedToGrid) && !unitIsMoving){
-					plusActionCost = 0;
-					pathToMove.Clear();
-					tempGridPosition = mousePositionConvertedToGrid;
+					//rendering path before user choses path and calculating path
+					if((tempGridPosition != mousePositionConvertedToGrid) && !unitIsMoving){
+						plusActionCost = 0;
+						pathToMove.Clear();
+						tempGridPosition = mousePositionConvertedToGrid;
 
-					if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
-						plusActionCost = 2;
-						
-						tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-						if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
-							foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
-								tempPathToMove = PathFinder(selectecUnitPosition, cell);
-								if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
-									pathToMove = new List<Vector3Int>(tempPathToMove);
+						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
+							plusActionCost = 2;
+							
+							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+							if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
+								foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
+									tempPathToMove = PathFinder(selectecUnitPosition, cell);
+									if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
+										pathToMove = new List<Vector3Int>(tempPathToMove);
+									}
 								}
 							}
-						}
-					}else{
-						pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
-					}
-
-					int index = 0;
-					Vector3[] convertedPath = new Vector3[pathToMove.Count];
-
-					actionCostText.text = (MovementCostCalculation(pathToMove) + plusActionCost).ToString();
-					if(MovementCostCalculation(pathToMove) + plusActionCost> hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
-						actionCostText.color = Color.red;
-					}else{
-						actionCostText.color = Color.white;
-					}
-
-					foreach(Vector3Int cell in pathToMove){
-						if(selectedUnitWalkableArea.Contains(cell)){
-							convertedPath[index++] = convertGidPosToWorldPos(cell);
 						}else{
-							pathToMove.RemoveRange(index, pathToMove.Count - index);
-							break;
+							pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
+						}
+
+						int index = 0;
+						Vector3[] convertedPath = new Vector3[pathToMove.Count];
+
+						actionCostText.text = (MovementCostCalculation(pathToMove) + plusActionCost).ToString();
+						if(MovementCostCalculation(pathToMove) + plusActionCost> hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
+							actionCostText.color = Color.red;
+						}else{
+							actionCostText.color = Color.white;
+						}
+
+						foreach(Vector3Int cell in pathToMove){
+							if(selectedUnitWalkableArea.Contains(cell)){
+								convertedPath[index++] = convertGidPosToWorldPos(cell);
+							}else{
+								pathToMove.RemoveRange(index, pathToMove.Count - index);
+								break;
+							}
+						}
+
+						lineRenderer.positionCount = index;
+						lineRenderer.SetPositions(convertedPath);
+					}else if(unitIsMoving){
+						lineRenderer.positionCount = 0;
+						actionCostText.text = "";
+					}
+				}
+
+				if(Input.GetMouseButtonDown(1)){
+					if(hitBox.transform.tag == champsTag){
+						//Movement of unit
+						if(unitIsMoving == false && unitCanMove && pathToMove.Count > 0){
+							StartCoroutine(MoveUnit(hitBox.transform, pathToMove, plusActionCost)); //Moving
 						}
 					}
-
-					lineRenderer.positionCount = index;
-					lineRenderer.SetPositions(convertedPath);
-				}else if(unitIsMoving){
-					lineRenderer.positionCount = 0;
-					actionCostText.text = "";
-				}
+				}	
 			}
-
-			if(Input.GetMouseButtonDown(1)){
-				if(hitBox.transform.tag == champsTag){
-					//Movement of unit
-					if(unitIsMoving == false && unitCanMove && pathToMove.Count > 0){
-						StartCoroutine(MoveUnit(hitBox.transform, pathToMove, plusActionCost)); //Moving
-					}
-				}
-			}	
 		}
 	}
 

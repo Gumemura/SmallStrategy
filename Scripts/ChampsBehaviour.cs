@@ -10,6 +10,7 @@ public class ChampsBehaviour: MonoBehaviour
 	public int hp;
 	public int maxIniciative;
 	[HideInInspector]public int iniciative;
+	public Sprite unitPortrait;
 
 	public Item equipedItem;
 	public Item[] invetory;
