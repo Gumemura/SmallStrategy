@@ -102,14 +102,18 @@ public class GameController : MonoBehaviour
 		unitIsMoving = false;
 	}
 
-	IEnumerator RollingIniciative(){
+	IEnumerator DisplayAnnunciation(string text, int time){
 		phaseAnouncement.text = "Rolling iniciative";
-		yield return new WaitForSeconds(3);
+		yield return new WaitForSeconds(time);
 		phaseAnouncement.text = "";
+	}
+
+	IEnumerator RollingIniciative(){
+		StartCoroutine(DisplayAnnunciation("Rolling for iniciative", 3));
+		yield return new WaitForSeconds(3);
 		foreach (ChampsBehaviour unit in allUnitsInGame){
-			StartCoroutine(unit.Displaytext((unit.iniciative).ToString(), 3, Color.white));
+			StartCoroutine(unit.RollingIniciative());
 		}
-		yield return new WaitForSeconds(2);
 
 		//Now the user can start playing
 		canPlayTheGame = true;

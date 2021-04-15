@@ -363,8 +363,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 8
   hp: 0
-  maxIniciative: 6
+  maxIniciative: 75
   iniciative: 0
+  unitPortrait: {fileID: 0}
   remainingSpeed: 0
   remainingHP: 0
   isAttackMelee: 1

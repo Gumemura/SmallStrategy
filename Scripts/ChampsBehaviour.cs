@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -44,11 +44,25 @@ public class ChampsBehaviour: MonoBehaviour
 		return iniciative;
 	}
 
+	//display a text for a briefly moment
 	public IEnumerator Displaytext(string text, int secondsTime, Color textColor){
 		unitText.text = text;
 		unitText.color = textColor;
 		yield return new WaitForSeconds(secondsTime);
 		unitText.text = "";
+	}
+
+	//makes a effect of "dice rolling" with the text
+	public IEnumerator RollingIniciative(){
+		int i = 0;
+		while(i < 300){
+			unitText.text = (Random.Range(1, maxIniciative)).ToString();
+			//y = 10 ^ x - 30
+			yield return new WaitForSeconds(Mathf.Pow(100, i*.1f - 30));
+			print(i);
+			i++;
+		}
+		StartCoroutine(Displaytext((SetIniciative()).ToString(), 3, Color.white));
 	}
 }
 
