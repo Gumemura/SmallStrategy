@@ -42,14 +42,12 @@ public class GameController : MonoBehaviour
 	public Transform walkableDotsParent;
 	public TextMeshProUGUI phaseAnouncement;
 
-
 	private string champsTag = "Champ";
 	private string enemyTag = "Enemy";
 	private SpriteRenderer cursorSpriteRenderer;
 	private List<ChampsBehaviour> allHeroes = new List<ChampsBehaviour>();
 	private List<ChampsBehaviour> allEnemies = new List<ChampsBehaviour>();
 	private List<ChampsBehaviour> allUnitsInGame = new List<ChampsBehaviour>();
-
 	private bool somethingIsSelected;
 	private RaycastHit2D hitBox;
 	private RaycastHit2D hitBoxWithUnitSelected;
@@ -66,7 +64,12 @@ public class GameController : MonoBehaviour
 	private int plusActionCost;
 	private bool canPlayTheGame = false;
 
+	private IniciativePortrait a;
+
 	void Start(){
+		a = gameObject.GetComponent<IniciativePortrait>();
+		a.SetQuantity(15);
+
 		//Reducing tilemap bounds to the place that contain tiles
 		floorTilemap.CompressBounds();
 
@@ -88,6 +91,7 @@ public class GameController : MonoBehaviour
 			ZCalculation(unitChampBeh);
 			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
 		}
+			
 		foreach(GameObject enemy in GameObject.FindGameObjectsWithTag(enemyTag)){
 			unitChampBeh = enemy.GetComponent<ChampsBehaviour>();
 			allEnemies.Add(unitChampBeh);
@@ -109,8 +113,9 @@ public class GameController : MonoBehaviour
 	}
 
 	IEnumerator RollingIniciative(){
-		StartCoroutine(DisplayAnnunciation("Rolling for iniciative", 3));
-		yield return new WaitForSeconds(3);
+		int timeDisplay = 3;
+		StartCoroutine(DisplayAnnunciation("Rolling for iniciative", timeDisplay));
+		yield return new WaitForSeconds(timeDisplay);
 		foreach (ChampsBehaviour unit in allUnitsInGame){
 			StartCoroutine(unit.RollingIniciative());
 		}
@@ -218,7 +223,7 @@ public class GameController : MonoBehaviour
 						tempGridPosition = mousePositionConvertedToGrid;
 
 						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
-							plusActionCost = 2;
+							plusActionCost = 2; //REVIEW!
 							
 							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 							if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
@@ -560,5 +565,9 @@ public class PriorityQueue<T>{
 
 	public bool Contains(T element){
 		return cells.Contains(element);
+	}
+
+	public bool ContainsPriority(int priority){
+		return cellPriority.Contains(priority);
 	}
 }

@@ -32,11 +32,11 @@ RectTransform:
   m_Father: {fileID: 1800516396}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -0.000000037252903, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -0.000000037252903, y: 0.55}
   m_SizeDelta: {x: 2.9227571, y: 1.216455}
-  m_Pivot: {x: 0.5, y: 1}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &976347910
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -99,7 +99,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -363,9 +363,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 8
   hp: 0
-  maxIniciative: 75
+  maxIniciative: 50
   iniciative: 0
-  unitPortrait: {fileID: 0}
+  unitPortrait: {fileID: 2173392165822354196, guid: 9735a6193ec5e9d4799a28cf126af029,
+    type: 3}
   remainingSpeed: 0
   remainingHP: 0
   isAttackMelee: 1

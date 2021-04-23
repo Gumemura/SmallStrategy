@@ -20,6 +20,7 @@ public class ChampsBehaviour: MonoBehaviour
 	public bool isAttackMelee;
 
 	private TextMeshProUGUI unitText;
+	private float textSizeVariation = .01f;
 
 	void Start(){
 		remainingSpeed = speed;
@@ -52,6 +53,21 @@ public class ChampsBehaviour: MonoBehaviour
 		unitText.text = "";
 	}
 
+	//makes the text go bigger than return to normal. A easy way to gain focus on the text
+	private IEnumerator PopUpText(float maxFontSize){
+		float i = 0;
+		int inverse = 1;
+		while (i < maxFontSize * 2){
+			if(i >= maxFontSize){
+				inverse = -1;
+			}
+			unitText.fontSize += textSizeVariation * inverse;
+			yield return new WaitForSeconds(textSizeVariation);
+			i += textSizeVariation;
+		}
+		unitText.fontSize = .4f;
+	}
+
 	//makes a effect of "dice rolling" with the text
 	public IEnumerator RollingIniciative(){
 		int i = 0;
@@ -59,10 +75,10 @@ public class ChampsBehaviour: MonoBehaviour
 			unitText.text = (Random.Range(1, maxIniciative)).ToString();
 			//y = 10 ^ x - 30
 			yield return new WaitForSeconds(Mathf.Pow(100, i*.1f - 30));
-			print(i);
 			i++;
 		}
-		StartCoroutine(Displaytext((SetIniciative()).ToString(), 3, Color.white));
+		StartCoroutine(Displaytext(iniciative.ToString(), 3, Color.white)); //displaying the inciative
+		StartCoroutine(PopUpText(textSizeVariation * 50)); //making it go big
 	}
 }
 
