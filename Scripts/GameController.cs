@@ -67,9 +67,6 @@ public class GameController : MonoBehaviour
 	private IniciativePortrait a;
 
 	void Start(){
-		a = gameObject.GetComponent<IniciativePortrait>();
-		a.SetQuantity(15);
-
 		//Reducing tilemap bounds to the place that contain tiles
 		floorTilemap.CompressBounds();
 
@@ -104,6 +101,9 @@ public class GameController : MonoBehaviour
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
+
+		a = gameObject.GetComponent<IniciativePortrait>();
+		a.SetQuantity(iniciativeOrder);
 	}
 
 	IEnumerator DisplayAnnunciation(string text, int time){
@@ -119,7 +119,8 @@ public class GameController : MonoBehaviour
 		foreach (ChampsBehaviour unit in allUnitsInGame){
 			StartCoroutine(unit.RollingIniciative());
 		}
-
+		yield return new WaitForSeconds(timeDisplay);
+		StartCoroutine(a.LowerPortraits());
 		//Now the user can start playing
 		canPlayTheGame = true;
 	}
@@ -569,5 +570,13 @@ public class PriorityQueue<T>{
 
 	public bool ContainsPriority(int priority){
 		return cellPriority.Contains(priority);
+	}
+
+	public T SeeElement(int index){
+		return cells[index];
+	}
+
+	public int Size(){
+		return cells.Count;
 	}
 }
