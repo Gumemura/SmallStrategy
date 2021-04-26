@@ -15,6 +15,8 @@ public class GameController : MonoBehaviour
 	public TextMeshProUGUI vector3CoordsDisplay;
 	public bool displayCoordinates;
 	public bool reduceSpeed;
+	public bool calculateIniciative;
+
 
 	[Header("Cursor sprites")]
 	public Sprite normalCursor;
@@ -63,6 +65,8 @@ public class GameController : MonoBehaviour
 	private List<Vector3Int> tempPathToMove = new List<Vector3Int>();
 	private int plusActionCost;
 	private bool canPlayTheGame = false;
+	private bool targetingEnemy = false;
+
 
 	private IniciativePortrait a;
 
@@ -97,7 +101,12 @@ public class GameController : MonoBehaviour
 			iniciativeOrder.Add(unitChampBeh, unitChampBeh.SetIniciative());
 		}
 
-		StartCoroutine(RollingIniciative());
+		//DEBUG
+		if(calculateIniciative){
+			StartCoroutine(RollingIniciative());
+		}else{
+			canPlayTheGame = true;
+		}
 
 		somethingIsSelected = false;
 		unitIsMoving = false;
@@ -219,25 +228,28 @@ public class GameController : MonoBehaviour
 
 					//rendering path before user choses path and calculating path
 					if((tempGridPosition != mousePositionConvertedToGrid) && !unitIsMoving){
-						plusActionCost = 0;
 						pathToMove.Clear();
 						tempGridPosition = mousePositionConvertedToGrid;
 
-						if(hitBoxWithUnitSelected && hitBoxWithUnitSelected.transform.tag == enemyTag){
-							plusActionCost = 2; //REVIEW!
-							
-							tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
-							if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
-								foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
-									tempPathToMove = PathFinder(selectecUnitPosition, cell);
-									if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
-										pathToMove = new List<Vector3Int>(tempPathToMove);
+						if(hitBoxWithUnitSelected){
+							if(hitBoxWithUnitSelected.transform.tag == enemyTag){
+								plusActionCost = 2; //REVIEW!
+								
+								tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+								if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
+									foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
+										tempPathToMove = PathFinder(selectecUnitPosition, cell);
+										if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
+											pathToMove = new List<Vector3Int>(tempPathToMove);
+										}
 									}
 								}
 							}
 						}else{
 							pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
+							plusActionCost = 0;
 						}
+						print(plusActionCost);
 
 						int index = 0;
 						Vector3[] convertedPath = new Vector3[pathToMove.Count];
