@@ -65,8 +65,6 @@ public class GameController : MonoBehaviour
 	private List<Vector3Int> tempPathToMove = new List<Vector3Int>();
 	private int plusActionCost;
 	private bool canPlayTheGame = false;
-	private bool targetingEnemy = false;
-
 
 	private IniciativePortrait a;
 
@@ -234,8 +232,8 @@ public class GameController : MonoBehaviour
 						if(hitBoxWithUnitSelected){
 							if(hitBoxWithUnitSelected.transform.tag == enemyTag){
 								plusActionCost = 2; //REVIEW!
-								
 								tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
+
 								if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
 									foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
 										tempPathToMove = PathFinder(selectecUnitPosition, cell);
@@ -244,14 +242,14 @@ public class GameController : MonoBehaviour
 										}
 									}
 								}
+
+
 							}
 						}else{
 							pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
 							plusActionCost = 0;
 						}
-						print(plusActionCost);
 
-						int index = 0;
 						Vector3[] convertedPath = new Vector3[pathToMove.Count];
 
 						actionCostText.text = (MovementCostCalculation(pathToMove) + plusActionCost).ToString();
@@ -261,6 +259,8 @@ public class GameController : MonoBehaviour
 							actionCostText.color = Color.white;
 						}
 
+						//Converting the list to array to be displayed in the line renderer
+						int index = 0;
 						foreach(Vector3Int cell in pathToMove){
 							if(selectedUnitWalkableArea.Contains(cell)){
 								convertedPath[index++] = convertGidPosToWorldPos(cell);
