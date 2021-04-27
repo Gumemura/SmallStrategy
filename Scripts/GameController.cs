@@ -178,7 +178,7 @@ public class GameController : MonoBehaviour
 		}else{
 			mousePositionConvertedToGrid = gameGrid.WorldToCell(mousePosition);//coordinates of the cell that cursor in below (vector3int)
 		}
-		gridPosToWorld = convertGidPosToWorldPos(mousePositionConvertedToGrid);//converted coordinate of the frid position to world coords (vector3)
+		gridPosToWorld = ConvertGridPosToWorldPos(mousePositionConvertedToGrid);//converted coordinate of the frid position to world coords (vector3)
 
 		CursorState();
 
@@ -226,6 +226,7 @@ public class GameController : MonoBehaviour
 
 					//rendering path before user choses path and calculating path
 					if((tempGridPosition != mousePositionConvertedToGrid) && !unitIsMoving){
+						Vector3[] convertedPath;
 						pathToMove.Clear();
 						tempGridPosition = mousePositionConvertedToGrid;
 
@@ -234,23 +235,28 @@ public class GameController : MonoBehaviour
 								plusActionCost = 2; //REVIEW!
 								tempGridPosition = hitBoxWithUnitSelected.transform.GetComponent<ChampsBehaviour>().getPositionOnGrid(gameGrid);
 
-								if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
-									foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
-										tempPathToMove = PathFinder(selectecUnitPosition, cell);
-										if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
-											pathToMove = new List<Vector3Int>(tempPathToMove);
+								//The easiest way to calculate the path to an enemy when with a melee attack is (i) calculate the path to him then (ii) remove the last element. Here its 
+								//not possible because its impossible to track a path to the enemy bcz his position will not be accepted by PathFinder method.
+								//Ctrl + F it: "if(floorTilemap.GetTile(neighbor) != null && !ContainsEnemy(neighbor)){". The "!ContainsEnemy(neighbor)" avoid the cells with enemy
+								//Thats why we are calculating the path for every neighbor
+								if(hitBox.transform.GetComponent<ChampsBehaviour>().isAttackMelee){
+									if(!getNeighbors(tempGridPosition).Contains(selectecUnitPosition)){
+										foreach (Vector3Int cell in getNeighbors(tempGridPosition)){
+											tempPathToMove = PathFinder(selectecUnitPosition, cell);
+											if((MovementCostCalculation(pathToMove) == 0 && MovementCostCalculation(tempPathToMove) > 0) || (MovementCostCalculation(tempPathToMove) > 0 && MovementCostCalculation(tempPathToMove) < MovementCostCalculation(pathToMove))){
+												pathToMove = new List<Vector3Int>(tempPathToMove);
+											}
 										}
 									}
+								}else{ //Rangedattack
+									print("TO DO RANGED ATTACK");//REVIEW
 								}
-
-
 							}
 						}else{
 							pathToMove = PathFinder(selectecUnitPosition, tempGridPosition);
 							plusActionCost = 0;
 						}
 
-						Vector3[] convertedPath = new Vector3[pathToMove.Count];
 
 						actionCostText.text = (MovementCostCalculation(pathToMove) + plusActionCost).ToString();
 						if(MovementCostCalculation(pathToMove) + plusActionCost> hitBox.transform.GetComponent<ChampsBehaviour>().remainingSpeed){
@@ -261,15 +267,23 @@ public class GameController : MonoBehaviour
 
 						//Converting the list to array to be displayed in the line renderer
 						int index = 0;
-						foreach(Vector3Int cell in pathToMove){
-							if(selectedUnitWalkableArea.Contains(cell)){
-								convertedPath[index++] = convertGidPosToWorldPos(cell);
-							}else{
-								pathToMove.RemoveRange(index, pathToMove.Count - index);
-								break;
+						if(!hitBoxWithUnitSelected || (hitBoxWithUnitSelected && hitBox.transform.GetComponent<ChampsBehaviour>().isAttackMelee)){
+							convertedPath = new Vector3[pathToMove.Count];
+							foreach(Vector3Int cell in pathToMove){
+								if(selectedUnitWalkableArea.Contains(cell)){
+									convertedPath[index++] = ConvertGridPosToWorldPos(cell);
+								}else{
+									pathToMove.RemoveRange(index, pathToMove.Count - index);
+									break;
+								}
 							}
+						}else{
+							convertedPath = new Vector3[2];
+							convertedPath[0] = ConvertGridPosToWorldPos(selectecUnitPosition);
+							convertedPath[1] = ConvertGridPosToWorldPos(tempGridPosition);
+							index = 2;
 						}
-
+			
 						lineRenderer.positionCount = index;
 						lineRenderer.SetPositions(convertedPath);
 					}else if(unitIsMoving){
@@ -291,7 +305,7 @@ public class GameController : MonoBehaviour
 	}
 
 	//Receives a Vector3Int and returns the center of the cell 
-	public Vector3 convertGidPosToWorldPos(Vector3Int gridPosition){
+	public Vector3 ConvertGridPosToWorldPos(Vector3Int gridPosition){
 		return gameGrid.CellToWorld(gridPosition) + new Vector3(0, gameGrid.cellSize.y/2, 0);
 	}
 
@@ -419,7 +433,7 @@ public class GameController : MonoBehaviour
 		unitIsMoving = true;
 		unit.transform.GetComponent<Animator>().SetBool("isMoving", true);
 		foreach(Vector3Int breadCrumb in path){
-			Vector2 convertedDestination = (Vector2)convertGidPosToWorldPos(breadCrumb);
+			Vector2 convertedDestination = (Vector2)ConvertGridPosToWorldPos(breadCrumb);
 
 			FlipUnit(unit, convertedDestination);
 
@@ -514,7 +528,7 @@ public class GameController : MonoBehaviour
 		}
 
 		foreach(Vector3Int cell in walkable){
-			Vector3 convertedWalkArea = convertGidPosToWorldPos(cell);
+			Vector3 convertedWalkArea = ConvertGridPosToWorldPos(cell);
 			Instantiate(walkableDots, convertedWalkArea, Quaternion.identity, walkableDotsParent);
 		}
 
